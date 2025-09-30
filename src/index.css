@@ -6,7 +6,7 @@
 
 /* Sohne Font Declarations */
 @font-face {
-  font-family: 'Sohne_Regular';
+  font-family: 'Sohne Regular';
   src: url('./assets/fonts/Sohne-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
@@ -14,7 +14,7 @@
 }
 
 @font-face {
-  font-family: 'Sohne_Medium';
+  font-family: 'Sohne Medium';
   src: url('./assets/fonts/Sohne-Medium.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
@@ -22,7 +22,7 @@
 }
 
 @font-face {
-  font-family: 'Sohne_Bold';
+  font-family: 'Sohne Bold';
   src: url('./assets/fonts/Sohne-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
@@ -30,11 +30,72 @@
 }
 
 @font-face {
-  font-family: 'Sohne_Black';
+  font-family: 'Sohne Black';
   src: url('./assets/fonts/Sohne-Black.otf') format('opentype');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
+}
+
+/* Font classes to ensure fonts are loading */
+.font-sohne-black {
+  font-family: 'Sohne Black', system-ui, sans-serif !important;
+}
+
+.font-sohne-bold {
+  font-family: 'Sohne Bold', system-ui, sans-serif !important;
+}
+
+.font-sohne-medium {
+  font-family: 'Sohne Medium', system-ui, sans-serif !important;
+}
+
+.font-sohne-regular {
+  font-family: 'Sohne Regular', system-ui, sans-serif !important;
+}
+
+/* Unified typography classes for both rendered text and textarea */
+.typography-title {
+  font-size: 42px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif;
+  text-align: center;
+}
+
+.typography-h2 {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-family: 'Sohne Bold', system-ui, sans-serif;
+  text-align: left;
+}
+
+.typography-h3 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-family: 'Sohne Medium', system-ui, sans-serif;
+  text-align: left;
+}
+
+.typography-body {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.6;
+  font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif;
+  text-align: justify;
+}
+
+.typography-caption {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  font-family: 'Sohne Regular', system-ui, sans-serif;
+  text-align: left;
 }
 
 :root {

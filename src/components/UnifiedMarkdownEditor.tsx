@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { Typography } from './ui/typography';
+import { getTypographyClass } from './ui/typography-variants';
 import defaultMarkdownContent from '../default.md?raw';
 
 // Parse inline markdown (bold, italic)
@@ -143,6 +144,8 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
   };
 
   if (isEditing) {
+    const typographyClass = getTypographyClass(value);
+    
     return (
       <div className="mb-3">
         <textarea
@@ -151,7 +154,7 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
-          className="w-full bg-transparent border-none outline-none resize-none text-[20px] leading-relaxed font-['Source_Serif_Pro',Georgia,Cambria,'Times_New_Roman',Times,serif] p-0 m-0"
+          className={`w-full bg-transparent border-none outline-none resize-none p-0 m-0 ${typographyClass}`}
           style={{ 
             minHeight: '100px',
             height: 'auto',
