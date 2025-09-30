@@ -30,6 +30,8 @@ export const getTypographyClass = (content: string): string => {
     return 'typography-h2';
   } else if (firstLine.startsWith('### ')) {
     return 'typography-h3';
+  } else if (firstLine.startsWith('> ')) {
+    return 'typography-caption';
   } else {
     return 'typography-body';
   }

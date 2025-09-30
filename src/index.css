@@ -62,7 +62,7 @@ h1.typography-title {
   line-height: 1.2 !important;
   letter-spacing: -0.025em !important;
   font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif !important;
-  text-align: center !important;
+  text-align: left !important;
   margin: 0 !important;
   padding: 24px 8px 12px 8px !important; /* top: 24px, sides: 8px, bottom: 12px */
 }
@@ -73,7 +73,7 @@ textarea.typography-title {
   line-height: 1.2 !important;
   letter-spacing: -0.025em !important;
   font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif !important;
-  text-align: center !important;
+  text-align: left !important;
   margin: 0 !important;
   padding: 24px 8px 0px 8px !important; /* top: 24px, sides: 8px, bottom: 0px to prevent extra space */
   vertical-align: top !important;
@@ -155,23 +155,29 @@ textarea.typography-body {
 
 .typography-caption,
 span.typography-caption {
-  font-size: 14px !important;
+  font-size: 18px !important;
   font-weight: 400 !important;
   line-height: 1.5 !important;
-  font-family: 'Sohne Regular', system-ui, sans-serif !important;
+  font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif !important;
   text-align: left !important;
+  color: #4a4a4a !important;
+  opacity: 0.8 !important;
   margin: 0 !important;
-  padding: 8px 8px 12px 8px !important; /* top: 8px, sides: 8px, bottom: 12px */
+  padding: 0px 8px 0px 8px !important; /* top: 0px, sides: 8px, bottom: 0px - removed all vertical padding */
+  vertical-align: top !important;
+  box-sizing: border-box !important;
 }
 
 textarea.typography-caption {
-  font-size: 14px !important;
+  font-size: 18px !important;
   font-weight: 400 !important;
   line-height: 1.5 !important;
-  font-family: 'Sohne Regular', system-ui, sans-serif !important;
+  font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif !important;
   text-align: left !important;
+  color: #4a4a4a !important;
+  opacity: 0.8 !important;
   margin: 0 !important;
-  padding: 8px 8px 0px 8px !important; /* top: 8px, sides: 8px, bottom: 0px to prevent extra space */
+  padding: 0px 8px 0px 8px !important; /* top: 0px, sides: 8px, bottom: 0px - matched with rendered version */
   vertical-align: top !important;
   box-sizing: border-box !important;
 }

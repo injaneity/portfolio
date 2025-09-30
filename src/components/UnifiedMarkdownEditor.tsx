@@ -59,6 +59,12 @@ function renderSection(section: string): React.ReactNode {
           {parseInlineMarkdown(trimmedLine.slice(4))}
         </Typography>
       );
+    } else if (trimmedLine.startsWith('> ')) {
+      return (
+        <Typography key={index} variant="caption">
+          {parseInlineMarkdown(trimmedLine.slice(2))}
+        </Typography>
+      );
     } else {
       return (
         <Typography key={index} variant="body">
@@ -100,7 +106,8 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
       // Set height to match the initial rendered height exactly
       const textarea = textareaRef.current;
       if (initialHeight !== null) {
-        // Use the exact measured height from the rendered element
+        // Force a reflow and use the exact measured height
+        textarea.style.height = 'auto';
         textarea.style.height = initialHeight + 'px';
         textarea.style.maxHeight = initialHeight + 'px';
         textarea.style.minHeight = initialHeight + 'px';
@@ -201,6 +208,24 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
   if (isEditing) {
     const typographyClass = getTypographyClass(value);
     
+    // Set appropriate minimum height based on content type
+    const getMinHeight = (typographyClass: string) => {
+      switch (typographyClass) {
+        case 'typography-caption':
+          return '35px'; // Smaller min height for captions
+        case 'typography-body':
+          return '60px'; // Medium height for body text
+        case 'typography-h3':
+          return '70px'; // Slightly larger for h3
+        case 'typography-h2':
+          return '80px'; // Larger for h2
+        case 'typography-title':
+          return '100px'; // Largest for title
+        default:
+          return '60px';
+      }
+    };
+
     return (
       <textarea
         ref={textareaRef}
@@ -210,7 +235,7 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
         onBlur={handleBlur}
         className={`w-full bg-transparent border-none outline-none resize-none hover:bg-muted/10 rounded-md transition-colors ${typographyClass}`}
         style={{ 
-          minHeight: '100px',
+          minHeight: getMinHeight(typographyClass),
           height: 'auto',
           whiteSpace: 'pre-wrap',
           wordWrap: 'break-word',

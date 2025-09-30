@@ -1,4 +1,5 @@
 # Hi! I'm Zane Chee.
+> This is a markdown editor and portfolio in one website.
 
 ## About Me
 
