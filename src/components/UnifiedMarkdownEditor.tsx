@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { Typography } from './ui/typography';
-import { Button } from './ui/button';
-import { RotateCcw } from 'lucide-react';
 import defaultMarkdownContent from '../default.md?raw';
 
 // Parse inline markdown (bold, italic)
@@ -198,24 +196,8 @@ export function UnifiedMarkdownEditor() {
     setEditingSectionIndex(null);
   };
 
-  const resetToDefault = () => {
-    setMarkdown(defaultMarkdownContent);
-    setEditingSectionIndex(null);
-  };
-
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12 relative">
-      {/* Reset Button */}
-      <Button
-        onClick={resetToDefault}
-        variant="outline"
-        size="sm"
-        className="fixed top-6 right-6 z-10"
-      >
-        <RotateCcw className="w-4 h-4 mr-2" />
-        Reset
-      </Button>
-
+    <div className="w-full max-w-2xl lg:max-w-3xl px-4 sm:px-6 lg:px-8 py-8 text-left">
       {/* Document Content */}
       <div className="space-y-0">
         {sections.map((section, index) => (
