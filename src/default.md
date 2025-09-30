@@ -1,8 +1,4 @@
-# Zane Chee
-
-## Full-Stack Developer & Designer
-
-I create **beautiful** and _functional_ digital experiences. Currently building modern web applications with React, TypeScript, and cutting-edge design systems.
+# Hi! I'm Zane Chee.
 
 ## About Me
 

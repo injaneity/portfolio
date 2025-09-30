@@ -57,7 +57,7 @@
 /* Unified typography classes for both rendered text and textarea */
 .typography-title,
 h1.typography-title {
-  font-size: 42px !important;
+  font-size: 48px !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.025em !important;
@@ -68,7 +68,7 @@ h1.typography-title {
 }
 
 textarea.typography-title {
-  font-size: 42px !important;
+  font-size: 48px !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.025em !important;
@@ -82,8 +82,8 @@ textarea.typography-title {
 
 .typography-h2,
 h2.typography-h2 {
-  font-size: 36px !important;
-  font-weight: 700 !important;
+  font-size: 32px !important;
+  font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.025em !important;
   font-family: 'Sohne Bold', system-ui, sans-serif !important;
@@ -93,8 +93,8 @@ h2.typography-h2 {
 }
 
 textarea.typography-h2 {
-  font-size: 36px !important;
-  font-weight: 700 !important;
+  font-size: 32px !important;
+  font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.025em !important;
   font-family: 'Sohne Bold', system-ui, sans-serif !important;
@@ -111,7 +111,7 @@ h3.typography-h3 {
   font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.025em !important;
-  font-family: 'Sohne Medium', system-ui, sans-serif !important;
+  font-family: 'Sohne Bold', system-ui, sans-serif !important;
   text-align: left !important;
   margin: 0 !important;
   padding: 24px 8px 12px 8px !important; /* top: 24px, sides: 8px, bottom: 12px */
