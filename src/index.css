@@ -131,7 +131,6 @@ textarea.typography-h3 {
 }
 
 .typography-body,
-textarea.typography-body,
 p.typography-body {
   font-size: 20px !important;
   font-weight: 400 !important;
@@ -139,11 +138,22 @@ p.typography-body {
   font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif !important;
   text-align: justify !important;
   margin: 0 !important;
-  padding: 0px 8px 12px 8px !important; /* top: 0px, sides: 8px, bottom: 12px */
+  padding: 12px 8px 12px 8px !important; /* top: 12px, sides: 8px, bottom: 12px */
+}
+
+textarea.typography-body {
+  font-size: 20px !important;
+  font-weight: 400 !important;
+  line-height: 1.6 !important;
+  font-family: 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif !important;
+  text-align: left !important; /* Left-aligned for easier editing */
+  margin: 0 !important;
+  padding: 12px 8px 0px 8px !important; /* top: 12px, sides: 8px, bottom: 0px to prevent extra space */
+  vertical-align: top !important;
+  box-sizing: border-box !important;
 }
 
 .typography-caption,
-textarea.typography-caption,
 span.typography-caption {
   font-size: 14px !important;
   font-weight: 400 !important;
@@ -151,7 +161,19 @@ span.typography-caption {
   font-family: 'Sohne Regular', system-ui, sans-serif !important;
   text-align: left !important;
   margin: 0 !important;
-  padding: 0px 8px 12px 8px !important; /* top: 0px, sides: 8px, bottom: 12px */
+  padding: 8px 8px 12px 8px !important; /* top: 8px, sides: 8px, bottom: 12px */
+}
+
+textarea.typography-caption {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  font-family: 'Sohne Regular', system-ui, sans-serif !important;
+  text-align: left !important;
+  margin: 0 !important;
+  padding: 8px 8px 0px 8px !important; /* top: 8px, sides: 8px, bottom: 0px to prevent extra space */
+  vertical-align: top !important;
+  box-sizing: border-box !important;
 }
 
 :root {

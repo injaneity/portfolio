@@ -76,10 +76,11 @@ interface EditableSectionProps {
   onEdit: (index: number) => void;
   onUpdate: (index: number, content: string) => void;
   onDelete: (index: number) => void;
+  onCreateNewSection: (index: number, content: string) => void;
   onStopEditing: () => void;
 }
 
-function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, onDelete, onStopEditing }: EditableSectionProps) {
+function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, onDelete, onCreateNewSection, onStopEditing }: EditableSectionProps) {
   const [value, setValue] = useState(section);
   const [initialHeight, setInitialHeight] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -140,6 +141,31 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
     if (e.key === 'Enter' && e.metaKey) {
       e.preventDefault();
       handleSaveOrDelete(value);
+    }
+
+    // Handle Enter key to create new body section
+    if (e.key === 'Enter' && !e.metaKey && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+      const textarea = e.currentTarget;
+      const cursorPosition = textarea.selectionStart;
+      const textBeforeCursor = value.slice(0, cursorPosition);
+      const textAfterCursor = value.slice(cursorPosition);
+      
+      // If we're at the end of the text or the cursor is followed only by whitespace
+      if (cursorPosition === value.length || textAfterCursor.trim() === '') {
+        e.preventDefault();
+        
+        // Update current section with text before cursor
+        const currentContent = textBeforeCursor.trim();
+        if (currentContent) {
+          onUpdate(sectionIndex, currentContent);
+        }
+        
+        // Create new section with remaining text or empty body text
+        const newContent = textAfterCursor.trim() || '';
+        onCreateNewSection(sectionIndex, newContent);
+        // Don't call onStopEditing() here - let the new section be focused
+        return;
+      }
     }
 
     // Handle backspace/delete on empty content
@@ -227,6 +253,16 @@ export function UnifiedMarkdownEditor() {
     setEditingSectionIndex(null);
   };
 
+  const createNewSection = (afterIndex: number, content: string) => {
+    const newSections = [...sections];
+    newSections.splice(afterIndex + 1, 0, content);
+    setMarkdown(newSections.join('\n\n'));
+    // Set editing to the new section immediately
+    setTimeout(() => {
+      setEditingSectionIndex(afterIndex + 1);
+    }, 0);
+  };
+
   return (
     <div className="w-full max-w-2xl lg:max-w-3xl px-4 sm:px-6 lg:px-8 py-8 text-left">
       {/* Document Content */}
@@ -240,6 +276,7 @@ export function UnifiedMarkdownEditor() {
             onEdit={setEditingSectionIndex}
             onUpdate={updateSection}
             onDelete={deleteSection}
+            onCreateNewSection={createNewSection}
             onStopEditing={() => setEditingSectionIndex(null)}
           />
         ))}
