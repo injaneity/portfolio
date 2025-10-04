@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { Typography } from './ui/typography';
 import { getTypographyClass } from './ui/typography-variants';
-import defaultMarkdownContent from '../default.md?raw';
 
 // Parse inline markdown (bold, italic)
 function parseInlineMarkdown(text: string): React.ReactNode[] {
@@ -24,55 +23,53 @@ function parseInlineMarkdown(text: string): React.ReactNode[] {
   }).filter(Boolean);
 }
 
-// Split markdown into sections (separated by double newlines)
+// Split markdown into sections (each line is its own section)
 function parseMarkdownSections(markdown: string): string[] {
-  return markdown.split('\n\n');
+  // Normalize line endings by removing \r characters
+  const normalized = markdown.replace(/\r/g, '');
+  return normalized.split('\n').filter(line => line.trim() !== '');
 }
 
-// Render a single section
+// Render a single section (now each section is a single line)
 function renderSection(section: string): React.ReactNode {
-  const lines = section.split('\n');
+  const trimmedLine = section.trim();
   
-  return lines.map((line, index) => {
-    const trimmedLine = line.trim();
-    
-    if (!trimmedLine) {
-      return null; // Let CSS handle line spacing
-    }
+  if (!trimmedLine) {
+    return null;
+  }
 
-    // Determine the type and render accordingly
-    if (trimmedLine.startsWith('# ')) {
-      return (
-        <Typography key={index} variant="title">
-          {parseInlineMarkdown(trimmedLine.slice(2))}
-        </Typography>
-      );
-    } else if (trimmedLine.startsWith('## ')) {
-      return (
-        <Typography key={index} variant="h2">
-          {parseInlineMarkdown(trimmedLine.slice(3))}
-        </Typography>
-      );
-    } else if (trimmedLine.startsWith('### ')) {
-      return (
-        <Typography key={index} variant="h3">
-          {parseInlineMarkdown(trimmedLine.slice(4))}
-        </Typography>
-      );
-    } else if (trimmedLine.startsWith('> ')) {
-      return (
-        <Typography key={index} variant="caption">
-          {parseInlineMarkdown(trimmedLine.slice(2))}
-        </Typography>
-      );
-    } else {
-      return (
-        <Typography key={index} variant="body">
-          {parseInlineMarkdown(trimmedLine)}
-        </Typography>
-      );
-    }
-  });
+  // Determine the type and render accordingly
+  if (trimmedLine.startsWith('# ')) {
+    return (
+      <Typography variant="title">
+        {parseInlineMarkdown(trimmedLine.slice(2))}
+      </Typography>
+    );
+  } else if (trimmedLine.startsWith('## ')) {
+    return (
+      <Typography variant="h2">
+        {parseInlineMarkdown(trimmedLine.slice(3))}
+      </Typography>
+    );
+  } else if (trimmedLine.startsWith('### ')) {
+    return (
+      <Typography variant="h3">
+        {parseInlineMarkdown(trimmedLine.slice(4))}
+      </Typography>
+    );
+  } else if (trimmedLine.startsWith('> ')) {
+    return (
+      <Typography variant="caption">
+        {parseInlineMarkdown(trimmedLine.slice(2))}
+      </Typography>
+    );
+  } else {
+    return (
+      <Typography variant="body">
+        {parseInlineMarkdown(trimmedLine)}
+      </Typography>
+    );
+  }
 }
 
 interface EditableSectionProps {
@@ -91,6 +88,7 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
   const [initialHeight, setInitialHeight] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const isMouseDownRef = useRef(false);
 
   useEffect(() => {
     setValue(section);
@@ -150,29 +148,27 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
       handleSaveOrDelete(value);
     }
 
-    // Handle Enter key to create new body section
+    // Handle Enter key to create new section
     if (e.key === 'Enter' && !e.metaKey && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
       const textarea = e.currentTarget;
       const cursorPosition = textarea.selectionStart;
       const textBeforeCursor = value.slice(0, cursorPosition);
       const textAfterCursor = value.slice(cursorPosition);
       
-      // If we're at the end of the text or the cursor is followed only by whitespace
-      if (cursorPosition === value.length || textAfterCursor.trim() === '') {
-        e.preventDefault();
-        
-        // Update current section with text before cursor
-        const currentContent = textBeforeCursor.trim();
-        if (currentContent) {
-          onUpdate(sectionIndex, currentContent);
-        }
-        
-        // Create new section with remaining text or empty body text
-        const newContent = textAfterCursor.trim() || '';
-        onCreateNewSection(sectionIndex, newContent);
-        // Don't call onStopEditing() here - let the new section be focused
-        return;
+      // Update current section with text before cursor
+      const currentContent = textBeforeCursor.trim();
+      if (currentContent) {
+        onUpdate(sectionIndex, currentContent);
+      } else {
+        // If current section is empty, delete it
+        onDelete(sectionIndex);
       }
+      
+      // Create new section with remaining text or empty body text
+      const newContent = textAfterCursor.trim() || '';
+      onCreateNewSection(sectionIndex, newContent);
+      return;
     }
 
     // Handle backspace/delete on empty content
@@ -193,10 +189,17 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
   };
 
   const handleBlur = () => {
-    handleSaveOrDelete(value);
+    // Only save on blur if we're not clicking on another section
+    if (!isMouseDownRef.current) {
+      setTimeout(() => {
+        handleSaveOrDelete(value);
+      }, 0);
+    }
+    isMouseDownRef.current = false;
   };
 
-  const handleEditClick = () => {
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
     // Capture the current height of the rendered section before editing
     if (sectionRef.current) {
       const height = sectionRef.current.offsetHeight;
@@ -251,6 +254,9 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
     <div 
       ref={sectionRef}
       className="cursor-pointer hover:bg-muted/10 rounded-md transition-colors"
+      onMouseDown={() => {
+        isMouseDownRef.current = true;
+      }}
       onClick={handleEditClick}
       title="Click to edit this section"
     >
@@ -259,29 +265,34 @@ function EditableSection({ section, sectionIndex, isEditing, onEdit, onUpdate, o
   );
 }
 
-export function UnifiedMarkdownEditor() {
-  const [markdown, setMarkdown] = useState(defaultMarkdownContent);
+export function UnifiedMarkdownEditor({ initialContent = '' }: { initialContent?: string }) {
+  const [markdown, setMarkdown] = useState(initialContent);
   const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setMarkdown(initialContent);
+    setEditingSectionIndex(null); // Reset editing state when content changes
+  }, [initialContent]);
 
   const sections = parseMarkdownSections(markdown);
 
   const updateSection = (index: number, content: string) => {
     const newSections = [...sections];
     newSections[index] = content;
-    setMarkdown(newSections.join('\n\n'));
+    setMarkdown(newSections.join('\n'));
   };
 
   const deleteSection = (index: number) => {
     const newSections = [...sections];
     newSections.splice(index, 1);
-    setMarkdown(newSections.join('\n\n'));
+    setMarkdown(newSections.join('\n'));
     setEditingSectionIndex(null);
   };
 
   const createNewSection = (afterIndex: number, content: string) => {
     const newSections = [...sections];
     newSections.splice(afterIndex + 1, 0, content);
-    setMarkdown(newSections.join('\n\n'));
+    setMarkdown(newSections.join('\n'));
     // Set editing to the new section immediately
     setTimeout(() => {
       setEditingSectionIndex(afterIndex + 1);
@@ -294,7 +305,7 @@ export function UnifiedMarkdownEditor() {
       <div className="space-y-0">
         {sections.map((section, index) => (
           <EditableSection
-            key={index}
+            key={`${index}-${section.slice(0, 20)}`}
             section={section}
             sectionIndex={index}
             isEditing={editingSectionIndex === index}
