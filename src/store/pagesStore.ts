@@ -15,7 +15,7 @@ interface PagesState {
 }
 
 // Dynamically discover all .md files in the content folder using Vite's glob import
-const contentFiles = import.meta.glob('/src/content/**/*.md', { eager: true, as: 'raw' });
+const contentFiles = import.meta.glob('/src/content/**/*.md', { query: '?raw', import: 'default', eager: true });
 
 // Generate pages list from discovered files
 const staticPages: PageMetadata[] = Object.entries(contentFiles).map(([path, content]) => {
