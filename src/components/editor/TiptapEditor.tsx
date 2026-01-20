@@ -130,10 +130,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   return (
     <div className="w-full min-h-screen bg-white relative">
-      {/* Floating action bar - only show when editable or in demo mode */}
-      {(editable || mode === 'demo') && (
-        <FloatingActionBar saveStatus={saveStatus} demoMode={mode === 'demo'} />
-      )}
+      {/* Floating action bar - shown on all pages */}
+      <FloatingActionBar />
 
       {/* Editor content - starts in middle with top padding */}
       <EditorContent editor={editor} />
@@ -142,9 +140,10 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       {showBackToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 w-12 h-12 bg-[#F38020] hover:bg-[#d96d1a] text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-50"
+          className="fixed bottom-8 right-8 flex items-center gap-2 text-[#F38020] hover:text-[#d96d1a] transition-colors duration-300 z-50 font-sohne-regular text-sm"
           aria-label="Back to top"
         >
+          <span>Return to top</span>
           <ArrowUp className="w-5 h-5" />
         </button>
       )}

@@ -6,12 +6,7 @@ import { usePagesStore } from '@/store/pagesStore';
 import { CreatePageModal } from '@/components/modals/CreatePageModal';
 import toast from 'react-hot-toast';
 
-interface FloatingActionBarProps {
-  saveStatus?: 'saved' | 'saving' | 'unsaved';
-  demoMode?: boolean;
-}
-
-export const FloatingActionBar: React.FC<FloatingActionBarProps> = () => {
+export const FloatingActionBar: React.FC = () => {
   const { isAuthenticated, login, logout } = useAuth();
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
