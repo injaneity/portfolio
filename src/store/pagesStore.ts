@@ -14,28 +14,35 @@ interface PagesState {
   searchPages: (query: string) => PageMetadata[];
 }
 
-// Dynamically discover all .md files in the content folder using Vite's glob import
-const contentFiles = import.meta.glob('/src/content/**/*.md', { query: '?raw', import: 'default', eager: true });
 
-// Generate pages list from discovered files
-const staticPages: PageMetadata[] = Object.entries(contentFiles).map(([path, content]) => {
-  // Extract filename without extension
-  const filename = path.split('/').pop()?.replace('.md', '') || '';
-  
-  // Capitalize first letter for title
-  const title = filename.charAt(0).toUpperCase() + filename.slice(1);
-  
-  // Count words in content
-  const wordCount = (content as string).split(/\s+/).filter(word => word.length > 0).length;
-  
-  return {
-    title,
-    slug: filename,
-    path: path.replace('/src/', 'src/'),
-    section: 'root' as const,
-    wordCount,
-  };
-});
+// Static metadata for known pages (add more as needed)
+const staticPages: PageMetadata[] = [
+  {
+    title: 'Landing',
+    slug: 'landing',
+    path: 'src/content/landing.md',
+    section: 'root',
+    wordCount: 0, // Will be filled dynamically
+  },
+  {
+    title: 'Experience',
+    slug: 'experience',
+    path: 'src/content/experience.md',
+    section: 'root',
+    wordCount: 0, // Will be filled dynamically
+  },
+  // Add more pages here if needed
+];
+
+// Helper to dynamically load markdown content
+export async function loadPageContent(slug: string): Promise<string | null> {
+  try {
+    const module = await import(`../content/${slug}.md?raw`);
+    return module.default;
+  } catch (e) {
+    return null;
+  }
+}
 
 export const usePagesStore = create<PagesState>((_, get) => ({
   pages: staticPages,

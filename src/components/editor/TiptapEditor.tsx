@@ -6,11 +6,10 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Typography from '@tiptap/extension-typography';
 import { Markdown } from 'tiptap-markdown';
 import { useEffect, useRef, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import { Link2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp } from 'lucide-react';
 import { SearchBar } from '../layout/SearchBar';
+import { InputRule } from '@tiptap/core';
 
 interface TiptapEditorProps {
   initialContent: string;
@@ -38,12 +37,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         heading: {
           levels: [1, 2, 3],
         },
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-[#F6821F] cursor-pointer transition-colors',
-        },
+        link: false,
       }),
       Image,
       Placeholder.configure({
@@ -55,6 +49,38 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         html: false,
         transformPastedText: true,
         transformCopiedText: true,
+        linkify: true,
+      }),
+      // Link extension must be last to avoid duplicate registration warning
+      Link.extend({
+        addInputRules() {
+          return [
+            new InputRule({
+              find: /\[([^\]]+)\]\(([^)]+)\)$/,
+              handler: ({ state, range, match }) => {
+                const { tr } = state;
+                const start = range.from;
+                const end = range.to;
+                const linkText = match[1];
+                const linkUrl = match[2];
+
+                if (linkText && linkUrl) {
+                  tr.replaceWith(start, end, state.schema.text(linkText))
+                    .addMark(
+                      start,
+                      start + linkText.length,
+                      state.schema.marks.link.create({ href: linkUrl })
+                    );
+                }
+              },
+            }),
+          ];
+        },
+      }).configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-[#F6821F] cursor-pointer transition-colors',
+        },
       }),
     ],
     content: initialContent,
@@ -120,8 +146,6 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     if (!dom) return;
 
     const handleClick = (e: MouseEvent) => {
-      if (editable) return; // don't intercept while editing
-
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
@@ -131,103 +155,90 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       const href = anchor.getAttribute('href');
       if (!href) return;
 
-      // Ignore hash links, mailto:, tel:, and external http(s) links
-      if (
-        href.startsWith('#') ||
-        href.startsWith('mailto:') ||
-        href.startsWith('tel:') ||
-        /^https?:\/\//i.test(href)
-      ) {
+      // Check if link is external
+      const isExternal = /^https?:\/\//i.test(href);
+      const isSpecial = href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:');
+      
+      // For internal links, always prevent default and navigate
+      if (!isExternal && !isSpecial) {
+        e.preventDefault();
+        e.stopPropagation();
+        navigate(href);
         return;
       }
-
-      // Prevent default and navigate via react-router for internal links
-      e.preventDefault();
-      try {
-        navigate(href);
-      } catch (err) {
-        // fallback: change location
-        window.location.href = href;
-      }
+      
+      // External and special links open normally
+      // (browser will handle them)
     };
 
     dom.addEventListener('click', handleClick);
     return () => dom.removeEventListener('click', handleClick);
   }, [editor, editable, navigate]);
 
-  // Mount a React LinkIcon into each anchor inside the editor (reliable React component instead of CSS ::after)
+  // Mount icons and fix link attributes
   useEffect(() => {
     if (!editor) return;
 
     const dom = (editor.view && (editor.view as any).dom) as HTMLElement | null;
     if (!dom) return;
 
-    const roots = new WeakMap<HTMLElement, Root>();
-
-      const mountIcon = (anchor: HTMLAnchorElement) => {
-      if (anchor.dataset.hasIcon) return;
-      // create wrapper span
-      const span = document.createElement('span');
-      span.className = 'inline-block align-middle ml-2 link-icon-root';
-      span.setAttribute('aria-hidden', 'true');
-      span.style.display = 'inline-block';
-      span.style.pointerEvents = 'none';
-      // append span after anchor text
-      anchor.appendChild(span);
-      try {
-        const root = createRoot(span);
-        root.render(<Link2 color="#F6821F" size={16} />);
-        roots.set(span, root);
-        anchor.dataset.hasIcon = '1';
-      } catch (err) {
-        // ignore render errors
-      }
-    };
-
-    const unmountIcon = (span: HTMLElement) => {
-      const root = roots.get(span);
-      if (root) {
-        try {
-          root.unmount();
-        } catch (e) {
-          /* ignore */
-        }
-      }
-      if (span.parentNode) span.parentNode.removeChild(span);
-    };
-
-    // initial pass
-    const scan = () => {
+    const processLinks = () => {
       const anchors = Array.from(dom.querySelectorAll('a')) as HTMLAnchorElement[];
-      anchors.forEach((a) => {
-        // skip external links and mailto/tel/hash
-        const href = a.getAttribute('href') || '';
-        if (/^(mailto:|tel:|#|https?:\/\/)/i.test(href)) return;
-        mountIcon(a);
+      
+      anchors.forEach((anchor) => {
+        const href = anchor.getAttribute('href') || '';
+        const isExternal = /^https?:\/\//i.test(href);
+        
+        // Strip target and rel from internal links
+        if (!isExternal) {
+          anchor.removeAttribute('target');
+          anchor.removeAttribute('rel');
+        } else {
+          // Ensure external links have proper attributes
+          anchor.setAttribute('target', '_blank');
+          anchor.setAttribute('rel', 'noopener noreferrer nofollow');
+        }
+        
+        // Mount icon if not already mounted
+        if (!anchor.dataset.iconMounted) {
+          // Remove any existing icon spans first
+          const existingIcons = anchor.querySelectorAll('.link-icon-root');
+          existingIcons.forEach(icon => icon.remove());
+          
+          // Create and append icon using CSS content instead of React
+          anchor.dataset.iconMounted = 'true';
+        }
       });
     };
 
-    // initial scan and mount
-    scan();
-    const delayed = setTimeout(scan, 200);
+    // Process immediately and after any DOM changes
+    processLinks();
+    
+    // Use MutationObserver to catch any DOM changes
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(processLinks);
+    });
+    
+    observer.observe(dom, {
+      childList: true,
+      subtree: true,
+      attributes: false,
+    });
 
-    // Re-scan and mount icons whenever the editor updates content
+    // Also process on editor updates
     const updateHandler = () => {
-      scan();
+      requestAnimationFrame(processLinks);
     };
 
     editor.on('update', updateHandler);
 
     return () => {
-      clearTimeout(delayed);
+      observer.disconnect();
       try {
         editor.off('update', updateHandler);
       } catch (e) {
         // ignore
       }
-      // cleanup created roots
-      const spans = Array.from(dom.querySelectorAll('.link-icon-root')) as HTMLElement[];
-      spans.forEach((s) => unmountIcon(s));
     };
   }, [editor]);
 
