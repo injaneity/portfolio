@@ -16,16 +16,19 @@ export const LandingPage: React.FC = () => {
     try {
       // Check localStorage for saved content
       const localContent = localStorage.getItem(STORAGE_KEY);
-      
+
       if (localContent) {
         setContent(localContent);
-      } else {
-        // Use default content
-        setContent(`# Hi! I'm Zane Chee.\n\n## About Me\n\nAs a full-time software engineer, I've learned that my true strength lies in designing software, not landscape sketches. From winning hackathons to building impactful systems, I thrive on solving tough problems.\n\n> In the spirit of art, my portfolio is fully editable with markdown. Try it!`);
+        return;
       }
+
+      // Try to load the landing markdown from the content folder
+      const module = await import('../../content/landing.md?raw');
+      setContent(module.default);
     } catch (error: any) {
       console.error('Error loading content:', error);
-      setContent(`# Hi! I'm Zane Chee.\n\n## About Me\n\nAs a full-time software engineer, I've learned that my true strength lies in designing software, not landscape sketches. From winning hackathons to building impactful systems, I thrive on solving tough problems.\n\n> In the spirit of art, my portfolio is fully editable with markdown. Try it!`);
+      // Fallback default
+      setContent(`This page seems to be empty...`);
     } finally {
       setLoading(false);
     }

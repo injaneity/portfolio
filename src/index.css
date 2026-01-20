@@ -389,9 +389,14 @@ h1 {
 }
 
 .ProseMirror a {
-  color: #F38020;
-  text-decoration: underline;
+  color: #F6821F;
+  text-decoration: none;
+  position: relative;
+  font-weight: 500;
 }
+
+
+/* Icons are now mounted as React components inside anchors; remove pseudo-element to avoid duplicates */
 
 .ProseMirror a:hover {
   color: #d96d1a;

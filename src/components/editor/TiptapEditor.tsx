@@ -6,6 +6,9 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Typography from '@tiptap/extension-typography';
 import { Markdown } from 'tiptap-markdown';
 import { useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Link2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowUp } from 'lucide-react';
 import { SearchBar } from '../layout/SearchBar';
 
@@ -37,9 +40,9 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         },
       }),
       Link.configure({
-        openOnClick: !editable,
+        openOnClick: false,
         HTMLAttributes: {
-          class: 'text-[#F6821F] underline hover:text-[#d96d1a] cursor-pointer transition-colors',
+          class: 'text-[#F6821F] cursor-pointer transition-colors',
         },
       }),
       Image,
@@ -107,6 +110,126 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       editor.setEditable(editable);
     }
   }, [editable, editor]);
+
+  // Intercept clicks on links inside the editor and use SPA navigation
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!editor) return;
+
+    const dom = (editor.view && (editor.view as any).dom) || null;
+    if (!dom) return;
+
+    const handleClick = (e: MouseEvent) => {
+      if (editable) return; // don't intercept while editing
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const anchor = target.closest('a') as HTMLAnchorElement | null;
+      if (!anchor) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href) return;
+
+      // Ignore hash links, mailto:, tel:, and external http(s) links
+      if (
+        href.startsWith('#') ||
+        href.startsWith('mailto:') ||
+        href.startsWith('tel:') ||
+        /^https?:\/\//i.test(href)
+      ) {
+        return;
+      }
+
+      // Prevent default and navigate via react-router for internal links
+      e.preventDefault();
+      try {
+        navigate(href);
+      } catch (err) {
+        // fallback: change location
+        window.location.href = href;
+      }
+    };
+
+    dom.addEventListener('click', handleClick);
+    return () => dom.removeEventListener('click', handleClick);
+  }, [editor, editable, navigate]);
+
+  // Mount a React LinkIcon into each anchor inside the editor (reliable React component instead of CSS ::after)
+  useEffect(() => {
+    if (!editor) return;
+
+    const dom = (editor.view && (editor.view as any).dom) as HTMLElement | null;
+    if (!dom) return;
+
+    const roots = new WeakMap<HTMLElement, Root>();
+
+      const mountIcon = (anchor: HTMLAnchorElement) => {
+      if (anchor.dataset.hasIcon) return;
+      // create wrapper span
+      const span = document.createElement('span');
+      span.className = 'inline-block align-middle ml-2 link-icon-root';
+      span.setAttribute('aria-hidden', 'true');
+      span.style.display = 'inline-block';
+      span.style.pointerEvents = 'none';
+      // append span after anchor text
+      anchor.appendChild(span);
+      try {
+        const root = createRoot(span);
+        root.render(<Link2 color="#F6821F" size={16} />);
+        roots.set(span, root);
+        anchor.dataset.hasIcon = '1';
+      } catch (err) {
+        // ignore render errors
+      }
+    };
+
+    const unmountIcon = (span: HTMLElement) => {
+      const root = roots.get(span);
+      if (root) {
+        try {
+          root.unmount();
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      if (span.parentNode) span.parentNode.removeChild(span);
+    };
+
+    // initial pass
+    const scan = () => {
+      const anchors = Array.from(dom.querySelectorAll('a')) as HTMLAnchorElement[];
+      anchors.forEach((a) => {
+        // skip external links and mailto/tel/hash
+        const href = a.getAttribute('href') || '';
+        if (/^(mailto:|tel:|#|https?:\/\/)/i.test(href)) return;
+        mountIcon(a);
+      });
+    };
+
+    // initial scan and mount
+    scan();
+    const delayed = setTimeout(scan, 200);
+
+    // Re-scan and mount icons whenever the editor updates content
+    const updateHandler = () => {
+      scan();
+    };
+
+    editor.on('update', updateHandler);
+
+    return () => {
+      clearTimeout(delayed);
+      try {
+        editor.off('update', updateHandler);
+      } catch (e) {
+        // ignore
+      }
+      // cleanup created roots
+      const spans = Array.from(dom.querySelectorAll('.link-icon-root')) as HTMLElement[];
+      spans.forEach((s) => unmountIcon(s));
+    };
+  }, [editor]);
 
   // Show back to top button when scrolled down
   useEffect(() => {
