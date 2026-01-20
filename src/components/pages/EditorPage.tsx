@@ -11,24 +11,14 @@ export const EditorPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Determine section from pathname
+  // Determine the actual slug from the pathname
   const pathname = location.pathname;
-  const section = pathname.startsWith('/projects')
-    ? 'projects'
-    : pathname.startsWith('/experience')
-    ? 'experience'
-    : undefined;
-
-  // Determine the content path
-  // Use "index" as slug when slug is undefined (for /projects and /experience routes)
-  const actualSlug = slug || 'index';
-  const contentPath = section
-    ? `src/content/${section}/${actualSlug}.md`
-    : `src/content/${actualSlug}.md`;
+  const actualSlug = slug || pathname.split('/').filter(Boolean)[0] || 'landing';
+  const contentPath = `src/content/${actualSlug}.md`;
 
   useEffect(() => {
     loadContent();
-  }, [section, slug]);
+  }, [actualSlug]);
 
   const loadContent = async () => {
     setLoading(true);
@@ -43,13 +33,15 @@ export const EditorPage: React.FC = () => {
         // Use local edits if they exist
         setContent(localContent);
       } else {
-        // Otherwise use default content based on section
-        const defaultContent = section === 'projects'
-          ? `# Projects\n\nThis is the ${actualSlug === 'index' ? 'main projects' : actualSlug} page.`
-          : section === 'experience'
-          ? `# Experience\n\nThis is the ${actualSlug === 'index' ? 'main experience' : actualSlug} page.`
-          : `# ${actualSlug}\n\nStart writing...`;
-        setContent(defaultContent);
+        // Try to load the actual markdown file from content folder
+        try {
+          const module = await import(`../../content/${actualSlug}.md?raw`);
+          setContent(module.default);
+        } catch (importError) {
+          // If file doesn't exist, use default content
+          const defaultContent = `# ${actualSlug.charAt(0).toUpperCase() + actualSlug.slice(1)}\n\nStart writing...`;
+          setContent(defaultContent);
+        }
       }
     } catch (err: any) {
       console.error('Error loading content:', err);

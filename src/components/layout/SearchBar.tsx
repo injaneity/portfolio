@@ -33,15 +33,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ centered = false }) => {
     setQuery('');
     setIsOpen(false);
 
-    // Navigate to the appropriate route
-    if (section === 'root') {
-      if (slug === 'landing') {
-        navigate('/');
-      } else {
-        navigate(`/${slug}`);
-      }
+    // Navigate to the appropriate route - all files are in root of content folder
+    if (slug === 'landing') {
+      navigate('/');
     } else {
-      navigate(`/${section}/${slug}`);
+      navigate(`/${slug}`);
     }
   };
 
