@@ -29,7 +29,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ centered = false }) => {
     }
   }, [isOpen]);
 
-  const handleSelect = (section: string, slug: string) => {
+  const handleSelect = (slug: string) => {
     setQuery('');
     setIsOpen(false);
 
@@ -70,7 +70,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ centered = false }) => {
           {results.map((page: PageMetadata) => (
             <button
               key={page.path}
-              onMouseDown={() => handleSelect(page.section, page.slug)}
+              onMouseDown={() => handleSelect(page.slug)}
               className="w-full px-4 py-4 text-left hover:bg-[#FFF5ED] transition-colors border-b border-gray-100 last:border-0 group"
             >
               <div className="flex items-center justify-between">
