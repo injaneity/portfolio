@@ -44,18 +44,27 @@ export const EditorPage: React.FC = () => {
         const githubContent = await githubService.getContent(contentPath);
         setContent(githubContent);
       } else {
-        // Guest: Try to fetch from public GitHub
-        const response = await fetch(
-          `https://raw.githubusercontent.com/${import.meta.env.VITE_GITHUB_OWNER}/${import.meta.env.VITE_GITHUB_REPO}/${import.meta.env.VITE_GITHUB_BRANCH}/${contentPath}`
-        );
+        // Guest: Check localStorage first, then fetch from public GitHub
+        const storageKey = `page_demo_${contentPath}`;
+        const localContent = localStorage.getItem(storageKey);
 
-        if (response.ok) {
-          const githubContent = await response.text();
-          setContent(githubContent);
-        } else if (response.status === 404) {
-          setError('Page not found');
+        if (localContent) {
+          // Use local edits if they exist
+          setContent(localContent);
         } else {
-          setError('Failed to load page content');
+          // Otherwise fetch from public GitHub
+          const response = await fetch(
+            `https://raw.githubusercontent.com/${import.meta.env.VITE_GITHUB_OWNER}/${import.meta.env.VITE_GITHUB_REPO}/${import.meta.env.VITE_GITHUB_BRANCH}/${contentPath}`
+          );
+
+          if (response.ok) {
+            const githubContent = await response.text();
+            setContent(githubContent);
+          } else if (response.status === 404) {
+            setError('Page not found');
+          } else {
+            setError('Failed to load page content');
+          }
         }
       }
     } catch (err: any) {
@@ -71,21 +80,25 @@ export const EditorPage: React.FC = () => {
   };
 
   const handleContentChange = async (newContent: string) => {
-    if (!isAuthenticated) {
-      toast.error('You must be logged in to edit this page');
-      return;
-    }
-
-    try {
-      await githubService.updateContent(
-        contentPath,
-        newContent,
-        `Update ${section ? `${section}/` : ''}${actualSlug}`
-      );
-      toast.success('Changes saved to GitHub');
-    } catch (error: any) {
-      console.error('Error saving content:', error);
-      toast.error('Failed to save changes');
+    if (isAuthenticated) {
+      // Admin: Save to GitHub
+      try {
+        await githubService.updateContent(
+          contentPath,
+          newContent,
+          `Update ${section ? `${section}/` : ''}${actualSlug}`
+        );
+        toast.success('Changes saved to GitHub');
+      } catch (error: any) {
+        console.error('Error saving content:', error);
+        toast.error('Failed to save changes');
+      }
+    } else {
+      // Guest: Save to localStorage (local only, not persisted to GitHub)
+      const storageKey = `page_demo_${contentPath}`;
+      localStorage.setItem(storageKey, newContent);
+      setContent(newContent);
+      // No toast for guests - silent local save
     }
   };
 
@@ -125,9 +138,9 @@ export const EditorPage: React.FC = () => {
   return (
     <TiptapEditor
       initialContent={content}
-      editable={isAuthenticated}
+      editable={true}
       onContentChange={handleContentChange}
-      mode={isAuthenticated ? 'admin' : 'view'}
+      mode={isAuthenticated ? 'admin' : 'demo'}
       placeholder="Start writing..."
     />
   );
