@@ -140,7 +140,6 @@ export const EditorPage: React.FC = () => {
       initialContent={content}
       editable={true}
       onContentChange={handleContentChange}
-      mode={isAuthenticated ? 'admin' : 'demo'}
       placeholder="Start writing..."
     />
   );

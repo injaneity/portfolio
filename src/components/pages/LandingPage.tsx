@@ -92,7 +92,6 @@ export const LandingPage: React.FC = () => {
       initialContent={content}
       editable={true}
       onContentChange={handleContentChange}
-      mode={isAuthenticated ? 'admin' : 'demo'}
       placeholder="Start writing your landing page..."
     />
   );

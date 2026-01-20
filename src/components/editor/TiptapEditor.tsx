@@ -13,7 +13,6 @@ interface TiptapEditorProps {
   initialContent: string;
   editable: boolean;
   onContentChange?: (markdown: string) => void;
-  mode?: 'admin' | 'demo' | 'view';
   placeholder?: string;
   onSaveStatusChange?: (status: 'saved' | 'saving' | 'unsaved') => void;
 }
@@ -22,13 +21,12 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   initialContent,
   editable,
   onContentChange,
-  mode = 'view',
   placeholder = 'Start writing...',
   onSaveStatusChange,
 }) => {
   const saveTimeoutRef = useRef<number | undefined>(undefined);
   const lastContentRef = useRef(initialContent);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [_, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   const editor = useEditor({
