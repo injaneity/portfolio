@@ -26,7 +26,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   placeholder = 'Start writing...',
   onSaveStatusChange,
 }) => {
-  const saveTimeoutRef = useRef<number>();
+  const saveTimeoutRef = useRef<number | undefined>(undefined);
   const lastContentRef = useRef(initialContent);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -65,7 +65,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       if (onContentChange) {
-        const markdown = (editor.storage.markdown as any).getMarkdown();
+        const markdown = ((editor.storage as any).markdown as any).getMarkdown();
 
         // Check if content actually changed
         if (markdown !== lastContentRef.current) {
@@ -97,7 +97,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   // Update editor when content changes externally
   useEffect(() => {
-    if (editor && initialContent !== (editor.storage.markdown as any).getMarkdown()) {
+    if (editor && initialContent !== ((editor.storage as any).markdown as any).getMarkdown()) {
       editor.commands.setContent(initialContent);
       lastContentRef.current = initialContent;
     }
