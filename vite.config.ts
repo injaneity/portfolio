@@ -11,4 +11,31 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 600, // Suppress warning for tiptap-editor chunk (505KB)
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // React core
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') || 
+              id.includes('node_modules/react-router-dom')) {
+            return 'react-vendor';
+          }
+          
+          // Tiptap editor and extensions
+          if (id.includes('@tiptap') || id.includes('tiptap-markdown')) {
+            return 'tiptap-editor';
+          }
+          
+          // UI libraries
+          if (id.includes('lucide-react') || 
+              id.includes('react-hot-toast') || 
+              id.includes('zustand')) {
+            return 'ui-vendor';
+          }
+        },
+      },
+    },
+  },
 })

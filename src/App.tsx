@@ -1,13 +1,23 @@
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { LandingPage } from '@/components/pages/LandingPage';
-import { EditorPage } from '@/components/pages/EditorPage';
+import { lazy, Suspense } from 'react';
+
+const LandingPage = lazy(() => import('@/components/pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const EditorPage = lazy(() => import('@/components/pages/EditorPage').then(m => ({ default: m.EditorPage })));
 
 function AppContent() {
 
   return (
     <>
-      <Routes>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen bg-white">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#F6821F] mx-auto mb-4"></div>
+            <p className="text-gray-600 font-semibold">Loading...</p>
+          </div>
+        </div>
+      }>
+        <Routes>
         {/* Landing page with dual-mode editing */}
         <Route path="/" element={<LandingPage />} />
 
@@ -22,6 +32,7 @@ function AppContent() {
         {/* Catch-all for root-level pages */}
         <Route path="/:slug" element={<EditorPage />} />
       </Routes>
+      </Suspense>
 
       {/* Toast notifications */}
       <Toaster
