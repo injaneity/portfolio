@@ -40,6 +40,16 @@ export const LandingPage: React.FC = () => {
     );
   }
 
+  if (!content && !loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold">No content available.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <TiptapEditor
       initialContent={content}
