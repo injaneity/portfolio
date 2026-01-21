@@ -5,9 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Sohne Font Declarations */
+
 @font-face {
   font-family: 'Sohne Regular';
-  src: url('./assets/fonts/Sohne-Regular.otf') format('opentype');
+  src: url('./assets/fonts/Sohne-Regular.woff2') format('woff2'),
+       url('./assets/fonts/Sohne-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -15,7 +17,8 @@
 
 @font-face {
   font-family: 'Sohne Medium';
-  src: url('./assets/fonts/Sohne-Medium.otf') format('opentype');
+  src: url('./assets/fonts/Sohne-Medium.woff2') format('woff2'),
+       url('./assets/fonts/Sohne-Medium.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -23,7 +26,8 @@
 
 @font-face {
   font-family: 'Sohne Bold';
-  src: url('./assets/fonts/Sohne-Bold.otf') format('opentype');
+  src: url('./assets/fonts/Sohne-Bold.woff2') format('woff2'),
+       url('./assets/fonts/Sohne-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -31,7 +35,8 @@
 
 @font-face {
   font-family: 'Sohne Black';
-  src: url('./assets/fonts/Sohne-Black.otf') format('opentype');
+  src: url('./assets/fonts/Sohne-Black.woff2') format('woff2'),
+       url('./assets/fonts/Sohne-Black.otf') format('opentype');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
