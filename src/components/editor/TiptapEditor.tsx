@@ -140,9 +140,9 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   // Intercept clicks on links inside the editor and use SPA navigation
   const navigate = useNavigate();
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || !editor.view) return;
 
-    const dom = (editor.view && (editor.view as any).dom) || null;
+    const dom = ((editor.view as any).dom) as HTMLElement | null;
     if (!dom) return;
 
     const handleClick = (e: MouseEvent) => {
@@ -189,9 +189,9 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   // Mount icons and fix link attributes
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || !editor.view) return;
 
-    const dom = (editor.view && (editor.view as any).dom) as HTMLElement | null;
+    const dom = ((editor.view as any).dom) as HTMLElement | null;
     if (!dom) return;
 
     const processLinks = () => {
