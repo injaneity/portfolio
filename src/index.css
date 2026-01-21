@@ -67,6 +67,17 @@
   line-height: 1.7;
 }
 
+/* Disable spell check underlines */
+.ProseMirror *::-webkit-spelling-error-underline,
+.ProseMirror *::-webkit-grammar-error-underline {
+  display: none !important;
+}
+
+.ProseMirror * {
+  -webkit-text-decoration-skip: none;
+  text-decoration-skip-ink: none;
+}
+
 .ProseMirror h1 {
   font-size: 48px;
   font-weight: 500;
@@ -171,12 +182,128 @@
   border-radius: 6px;
   overflow-x: auto;
   margin: 1.5rem 0;
+  font-family: 'Monaco', 'Courier New', monospace;
 }
 
 .ProseMirror pre code {
   background-color: transparent;
   padding: 0;
   font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Syntax Highlighting Styles - Srcery color scheme */
+.ProseMirror .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1rem;
+  color: #1F1F1F;
+  background-color: #f5f5f5 !important;
+  border-radius: 6px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Keywords - Srcery red */
+.ProseMirror .hljs-keyword,
+.ProseMirror .hljs-selector-tag,
+.ProseMirror .hljs-literal,
+.ProseMirror .hljs-section {
+  color: #EF2F27;
+  font-weight: 600;
+}
+
+/* Control keywords and built-ins - Srcery blue */
+.ProseMirror .hljs-built_in,
+.ProseMirror .hljs-doctag {
+  color: #2C78BF;
+}
+
+/* Strings - Srcery green */
+.ProseMirror .hljs-string,
+.ProseMirror .hljs-template-variable,
+.ProseMirror .hljs-addition,
+.ProseMirror .hljs-meta-string {
+  color: #519F50;
+}
+
+/* Functions and class names - Srcery yellow/gold */
+.ProseMirror .hljs-function,
+.ProseMirror .hljs-title.function_,
+.ProseMirror .hljs-title.class_,
+.ProseMirror .hljs-class,
+.ProseMirror .hljs-title.class,
+.ProseMirror .hljs-title {
+  color: #FBB829;
+  font-weight: 500;
+}
+
+/* Types - Srcery cyan */
+.ProseMirror .hljs-type,
+.ProseMirror .hljs-selector-class {
+  color: #0AAEB3;
+}
+
+/* Variables and parameters - Srcery orange */
+.ProseMirror .hljs-variable,
+.ProseMirror .hljs-attr,
+.ProseMirror .hljs-params,
+.ProseMirror .hljs-property,
+.ProseMirror .hljs-attribute {
+  color: #FF5F00;
+}
+
+/* Numbers - Srcery magenta */
+.ProseMirror .hljs-number {
+  color: #E02C6D;
+}
+
+/* Comments - Srcery bright black/gray */
+.ProseMirror .hljs-comment,
+.ProseMirror .hljs-quote {
+  color: #918175;
+  font-style: italic;
+}
+
+/* Meta and annotations - muted gray */
+.ProseMirror .hljs-meta,
+.ProseMirror .hljs-meta-keyword {
+  color: #918175;
+}
+
+/* Operators and punctuation - Srcery hard black */
+.ProseMirror .hljs-operator,
+.ProseMirror .hljs-punctuation {
+  color: #2D2C29;
+}
+
+/* Tags in markup - Srcery red */
+.ProseMirror .hljs-tag,
+.ProseMirror .hljs-name,
+.ProseMirror .hljs-selector-id {
+  color: #EF2F27;
+}
+
+/* Emphasis */
+.ProseMirror .hljs-emphasis {
+  font-style: italic;
+}
+
+.ProseMirror .hljs-strong {
+  font-weight: 700;
+}
+
+/* Regular expressions - Srcery magenta */
+.ProseMirror .hljs-regexp {
+  color: #E02C6D;
+}
+
+/* Symbols - Srcery cyan */
+.ProseMirror .hljs-symbol,
+.ProseMirror .hljs-bullet,
+.ProseMirror .hljs-link {
+  color: #0AAEB3;
 }
 
 .ProseMirror blockquote {
