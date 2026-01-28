@@ -29,6 +29,7 @@ export default function CodeBlockComponent({ node }: NodeViewProps) {
           onClick={handleCopy}
           aria-label="Copy code"
           type="button"
+          tabIndex={-1}
         >
           {copied ? <Check size={16} /> : <Copy size={16} />}
         </button>

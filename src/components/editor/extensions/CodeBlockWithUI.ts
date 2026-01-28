@@ -1,7 +1,7 @@
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { Transaction } from '@tiptap/pm/state';
-import { EditorState } from '@tiptap/pm/state';
+import { EditorState, TextSelection } from '@tiptap/pm/state';
 import CodeBlockComponent from '../CodeBlockComponent';
 
 export const CodeBlockWithUI = CodeBlockLowlight.extend({
@@ -49,7 +49,7 @@ export const CodeBlockWithUI = CodeBlockLowlight.extend({
         }
         return false;
       },
-      // Handle Backspace to remove full indent
+      // Handle Backspace to remove full indent and matching braces
       Backspace: () => {
         if (this.editor.isActive('codeBlock')) {
           return this.editor.commands.command(({ tr, state }: { tr: Transaction; state: EditorState }) => {
@@ -65,6 +65,17 @@ export const CodeBlockWithUI = CodeBlockLowlight.extend({
             const cursorPos = $from.pos;
             const textBefore = state.doc.textBetween(lineStart, cursorPos);
 
+            // Check if we're deleting between matching braces
+            const charBefore = state.doc.textBetween(cursorPos - 1, cursorPos);
+            const charAfter = state.doc.textBetween(cursorPos, cursorPos + 1);
+            const matchingBraces: Record<string, string> = { '{': '}', '[': ']', '(': ')' };
+
+            if (matchingBraces[charBefore] === charAfter) {
+              // Delete both the opening and closing brace
+              tr.delete(cursorPos - 1, cursorPos + 1);
+              return true;
+            }
+
             // Check if we're only deleting spaces at the start of the line
             const onlySpacesBefore = /^\s+$/.test(textBefore);
 
@@ -72,6 +83,104 @@ export const CodeBlockWithUI = CodeBlockLowlight.extend({
               // Calculate how many spaces to delete (up to 2, or all remaining)
               const spacesToDelete = textBefore.length % 2 === 0 ? 2 : textBefore.length % 2;
               tr.delete(cursorPos - spacesToDelete, cursorPos);
+              return true;
+            }
+
+            return false;
+          });
+        }
+        return false;
+      },
+      // Auto-complete opening braces
+      '{': () => {
+        if (this.editor.isActive('codeBlock')) {
+          return this.editor.commands.command(({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { selection } = state;
+            const { from } = selection;
+            tr.insertText('{}', from);
+            tr.setSelection(TextSelection.near(tr.doc.resolve(from + 1)));
+            return true;
+          });
+        }
+        return false;
+      },
+      '[': () => {
+        if (this.editor.isActive('codeBlock')) {
+          return this.editor.commands.command(({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { selection } = state;
+            const { from } = selection;
+            tr.insertText('[]', from);
+            tr.setSelection(TextSelection.near(tr.doc.resolve(from + 1)));
+            return true;
+          });
+        }
+        return false;
+      },
+      '(': () => {
+        if (this.editor.isActive('codeBlock')) {
+          return this.editor.commands.command(({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { selection } = state;
+            const { from } = selection;
+            tr.insertText('()', from);
+            tr.setSelection(TextSelection.near(tr.doc.resolve(from + 1)));
+            return true;
+          });
+        }
+        return false;
+      },
+      // Skip over closing braces if they're already there
+      '}': () => {
+        if (this.editor.isActive('codeBlock')) {
+          return this.editor.commands.command(({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { selection } = state;
+            const { from, empty } = selection;
+
+            if (!empty) return false;
+
+            const charAfter = state.doc.textBetween(from, from + 1);
+            if (charAfter === '}') {
+              // Just move cursor forward
+              tr.setSelection(TextSelection.near(tr.doc.resolve(from + 1)));
+              return true;
+            }
+
+            return false;
+          });
+        }
+        return false;
+      },
+      ']': () => {
+        if (this.editor.isActive('codeBlock')) {
+          return this.editor.commands.command(({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { selection } = state;
+            const { from, empty } = selection;
+
+            if (!empty) return false;
+
+            const charAfter = state.doc.textBetween(from, from + 1);
+            if (charAfter === ']') {
+              // Just move cursor forward
+              tr.setSelection(TextSelection.near(tr.doc.resolve(from + 1)));
+              return true;
+            }
+
+            return false;
+          });
+        }
+        return false;
+      },
+      ')': () => {
+        if (this.editor.isActive('codeBlock')) {
+          return this.editor.commands.command(({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { selection } = state;
+            const { from, empty } = selection;
+
+            if (!empty) return false;
+
+            const charAfter = state.doc.textBetween(from, from + 1);
+            if (charAfter === ')') {
+              // Just move cursor forward
+              tr.setSelection(TextSelection.near(tr.doc.resolve(from + 1)));
               return true;
             }
 
