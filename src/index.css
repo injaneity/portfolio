@@ -378,22 +378,36 @@
 }
 
 /* Image with Caption Styles */
-.ProseMirror .image-with-caption {
+.ProseMirror figure.image-with-caption {
   margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.ProseMirror .image-with-caption img {
+.ProseMirror figure.image-with-caption img {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
   display: block;
 }
 
-.ProseMirror .image-with-caption figcaption {
+.ProseMirror figure.image-with-caption figcaption {
   font-size: 16px;
   color: #6b6b6b;
   font-style: italic;
   text-align: center;
   margin-top: 0.75rem;
   line-height: 1.5;
+  font-family: 'Sohne Regular', system-ui, sans-serif;
+}
+
+/* Standalone images without captions */
+.ProseMirror img:not(figure img) {
+  margin: 2rem 0;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
 }

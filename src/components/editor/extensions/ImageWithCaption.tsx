@@ -1,29 +1,4 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
-import type { NodeViewProps } from '@tiptap/core';
-
-// React component to render image with caption
-const ImageComponent = ({ node }: NodeViewProps) => {
-  const { src, alt } = node.attrs;
-
-  return (
-    <NodeViewWrapper className="image-with-caption my-8">
-      <div className="flex flex-col items-center gap-2">
-        <img
-          src={src}
-          alt={alt || ''}
-          className="max-w-full h-auto rounded-lg"
-          loading="lazy"
-        />
-        {alt && (
-          <figcaption className="text-sm text-gray-600 italic text-center font-sohne-regular">
-            {alt}
-          </figcaption>
-        )}
-      </div>
-    </NodeViewWrapper>
-  );
-};
 
 export const ImageWithCaption = Node.create({
   name: 'image',
@@ -38,7 +13,11 @@ export const ImageWithCaption = Node.create({
     return {
       src: {
         default: null,
-        parseHTML: (element) => element.getAttribute('src'),
+        parseHTML: (element) => {
+          // Handle both <img> tags and <figure> wrappers
+          const img = element.tagName === 'IMG' ? element : element.querySelector('img');
+          return img?.getAttribute('src') || null;
+        },
         renderHTML: (attributes) => {
           if (!attributes.src) {
             return {};
@@ -48,7 +27,10 @@ export const ImageWithCaption = Node.create({
       },
       alt: {
         default: null,
-        parseHTML: (element) => element.getAttribute('alt'),
+        parseHTML: (element) => {
+          const img = element.tagName === 'IMG' ? element : element.querySelector('img');
+          return img?.getAttribute('alt') || null;
+        },
         renderHTML: (attributes) => {
           if (!attributes.alt) {
             return {};
@@ -58,7 +40,10 @@ export const ImageWithCaption = Node.create({
       },
       title: {
         default: null,
-        parseHTML: (element) => element.getAttribute('title'),
+        parseHTML: (element) => {
+          const img = element.tagName === 'IMG' ? element : element.querySelector('img');
+          return img?.getAttribute('title') || null;
+        },
         renderHTML: (attributes) => {
           if (!attributes.title) {
             return {};
@@ -74,14 +59,42 @@ export const ImageWithCaption = Node.create({
       {
         tag: 'img[src]',
       },
+      {
+        tag: 'figure',
+      },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['img', mergeAttributes(HTMLAttributes)];
-  },
+    const { alt } = HTMLAttributes;
 
-  addNodeView() {
-    return ReactNodeViewRenderer(ImageComponent);
+    // If there's alt text, render as a figure with caption
+    if (alt) {
+      return [
+        'figure',
+        { class: 'image-with-caption' },
+        [
+          'img',
+          mergeAttributes(HTMLAttributes, {
+            class: 'max-w-full h-auto rounded-lg',
+            loading: 'lazy',
+          }),
+        ],
+        [
+          'figcaption',
+          { class: 'text-sm text-gray-600 italic text-center font-sohne-regular' },
+          alt,
+        ],
+      ];
+    }
+
+    // No alt text, just render the image
+    return [
+      'img',
+      mergeAttributes(HTMLAttributes, {
+        class: 'max-w-full h-auto rounded-lg',
+        loading: 'lazy',
+      }),
+    ];
   },
 });
