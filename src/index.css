@@ -384,6 +384,12 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  transition: opacity 0.2s;
+  pointer-events: none; /* Let clicks pass through empty space */
+}
+
+.ProseMirror figure.image-with-caption:hover {
+  opacity: 0.8;
 }
 
 .ProseMirror figure.image-with-caption img {
@@ -391,6 +397,12 @@
   height: auto;
   border-radius: 8px;
   display: block;
+  transition: transform 0.2s;
+  pointer-events: auto; /* Image itself is clickable */
+}
+
+.ProseMirror figure.image-with-caption img:hover {
+  transform: scale(0.98);
 }
 
 .ProseMirror figure.image-with-caption figcaption {
@@ -401,4 +413,12 @@
   margin-top: 0.75rem;
   line-height: 1.5;
   font-family: 'Sohne Regular', system-ui, sans-serif;
+  pointer-events: auto; /* Caption is clickable */
+}
+
+/* Selected image indicator */
+.ProseMirror .ProseMirror-selectednode figure.image-with-caption {
+  outline: 2px solid #F6821F;
+  outline-offset: 2px;
+  border-radius: 8px;
 }

@@ -35,6 +35,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const lastContentRef = useRef(initialContent);
   const [_, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const imageConversionInProgress = useRef(false);
 
   // Create lowlight instance with common languages
   const lowlight = createLowlight(common);
@@ -76,7 +77,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         addInputRules() {
           return [
             new InputRule({
-              find: /\[([^\]]+)\]\(([^)]+)\)\s$/,
+              // Match [text](url) but NOT ![text](url) (images)
+              find: /(?<!!)\[([^\]]+)\]\(([^)]+)\)\s$/,
               handler: ({ state, range, match }) => {
                 try {
                   const { tr } = state;
@@ -188,6 +190,78 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
+
+      // Handle image clicks - convert to markdown for editing
+      // Only trigger on actual img element, not figure wrapper
+      const imgElement = target.closest('img[data-image-markdown]') as HTMLImageElement | null;
+
+      if (imgElement && editable) {
+        // Prevent rapid-fire conversions
+        if (imageConversionInProgress.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        imageConversionInProgress.current = true;
+        e.preventDefault();
+        e.stopPropagation();
+
+        try {
+          // Find the image node in the editor
+          const pos = editor.view.posAtDOM(imgElement, 0);
+          const resolvedPos = editor.state.doc.resolve(pos);
+
+          // Find the actual image node
+          let imageNode = null;
+          let imagePos = -1;
+
+          // Check if we're directly at an image node
+          if (resolvedPos.parent.type.name === 'image') {
+            imageNode = resolvedPos.parent;
+            imagePos = resolvedPos.before();
+          } else {
+            // Search around the position for an image node
+            const { doc } = editor.state;
+            doc.nodesBetween(Math.max(0, pos - 5), Math.min(doc.content.size, pos + 5), (node, nodePos) => {
+              if (node.type.name === 'image') {
+                imageNode = node;
+                imagePos = nodePos;
+                return false; // Stop searching
+              }
+            });
+          }
+
+          if (imageNode && imagePos >= 0) {
+            const { src, alt, title } = imageNode.attrs;
+            const altText = alt || '';
+            const titleText = title ? ` "${title}"` : '';
+            const markdown = `![${altText}](${src}${titleText})`;
+
+            // Use transaction to replace block image with paragraph containing markdown text
+            const { tr, schema } = editor.state;
+            const paragraphNode = schema.nodes.paragraph.create(null, schema.text(markdown));
+            tr.replaceWith(imagePos, imagePos + imageNode.nodeSize, paragraphNode);
+            editor.view.dispatch(tr);
+
+            // Position cursor after the markdown text
+            setTimeout(() => {
+              editor.commands.setTextSelection(imagePos + markdown.length);
+              editor.commands.focus();
+              // Reset flag after a short delay to prevent loops
+              setTimeout(() => {
+                imageConversionInProgress.current = false;
+              }, 100);
+            }, 10);
+          } else {
+            imageConversionInProgress.current = false;
+          }
+        } catch (error) {
+          console.error('Error converting image to markdown:', error);
+          imageConversionInProgress.current = false;
+        }
+        return;
+      }
 
       // Handle link icon clicks
       if (target.classList.contains('link-icon')) {
@@ -365,6 +439,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   useEffect(() => {
     if (!editor || !editor.view) return;
 
+    let isProcessing = false;
+
     const timeoutId = setTimeout(() => {
       if (!editor || !editor.view) return;
 
@@ -374,6 +450,10 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       const dom = viewDom as HTMLElement;
 
       const processLinkAttributes = () => {
+        // Prevent recursive processing
+        if (isProcessing) return;
+        isProcessing = true;
+
         const anchors = Array.from(dom.querySelectorAll('a')) as HTMLAnchorElement[];
 
         anchors.forEach((anchor) => {
@@ -394,20 +474,14 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             }
           }
         });
+
+        isProcessing = false;
       };
 
+      // Process once on mount
       processLinkAttributes();
 
-      const observer = new MutationObserver(() => {
-        requestAnimationFrame(processLinkAttributes);
-      });
-
-      observer.observe(dom, {
-        childList: true,
-        subtree: true,
-        attributes: false,
-      });
-
+      // Only process on editor updates, not on every DOM mutation
       const updateHandler = () => {
         requestAnimationFrame(processLinkAttributes);
       };
@@ -415,7 +489,6 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       editor.on('update', updateHandler);
 
       return () => {
-        observer.disconnect();
         clearTimeout(timeoutId);
         try {
           editor.off('update', updateHandler);
