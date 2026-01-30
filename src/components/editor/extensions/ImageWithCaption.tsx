@@ -1,6 +1,6 @@
 import { Node } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import { NodeSelection } from '@tiptap/pm/state';
+import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { InputRule } from '@tiptap/core';
 import { ImageWithCaptionComponent } from './ImageWithCaptionComponent';
 
@@ -159,14 +159,54 @@ export const ImageWithCaption = Node.create({
 
       // Allow navigating past images with ArrowDown
       ArrowDown: ({ editor }) => {
-        const { state } = editor;
+        const { state, view } = editor;
         const { selection } = state;
 
         if (selection instanceof NodeSelection && selection.node.type.name === 'image') {
-          // Move cursor to after the image
-          const pos = selection.to;
-          editor.commands.setTextSelection(pos);
-          return true;
+          const { tr, doc } = state;
+          const beforeImagePos = selection.from;
+          const afterImagePos = selection.to;
+
+          try {
+            // Get the horizontal pixel coordinate from the line before the image
+            const coordsBefore = view.coordsAtPos(beforeImagePos > 0 ? beforeImagePos - 1 : 0);
+            const xCoord = coordsBefore.left;
+
+            // Find the next paragraph after the image
+            const $after = doc.resolve(afterImagePos);
+            const nextNode = $after.nodeAfter;
+
+            if (nextNode && nextNode.type.name === 'paragraph' && nextNode.content.size > 0) {
+              const paragraphStart = afterImagePos + 1;
+
+              // Get the vertical coordinate of the start of the next paragraph
+              const coordsAfter = view.coordsAtPos(paragraphStart);
+              const yCoord = coordsAfter.top + 5; // Slightly below the top to ensure we're in the line
+
+              // Find the position at the same horizontal coordinate in the next paragraph
+              const targetCoords = view.posAtCoords({ left: xCoord, top: yCoord });
+
+              if (targetCoords) {
+                const sel = TextSelection.near(doc.resolve(targetCoords.pos));
+                if (sel) {
+                  tr.setSelection(sel);
+                  editor.view.dispatch(tr);
+                  return true;
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error in ArrowDown navigation:', error);
+          }
+
+          // Fallback to default behavior
+          const $after = doc.resolve(afterImagePos);
+          const sel = TextSelection.near($after, 1);
+          if (sel) {
+            tr.setSelection(sel);
+            editor.view.dispatch(tr);
+            return true;
+          }
         }
 
         return false;
@@ -174,14 +214,54 @@ export const ImageWithCaption = Node.create({
 
       // Allow navigating past images with ArrowUp
       ArrowUp: ({ editor }) => {
-        const { state } = editor;
+        const { state, view } = editor;
         const { selection } = state;
 
         if (selection instanceof NodeSelection && selection.node.type.name === 'image') {
-          // Move cursor to before the image
-          const pos = selection.from;
-          editor.commands.setTextSelection(Math.max(0, pos - 1));
-          return true;
+          const { tr, doc } = state;
+          const beforeImagePos = selection.from;
+          const afterImagePos = selection.to;
+
+          try {
+            // Get the horizontal pixel coordinate from the line after the image
+            const coordsAfter = view.coordsAtPos(afterImagePos < doc.content.size ? afterImagePos + 1 : afterImagePos);
+            const xCoord = coordsAfter.left;
+
+            // Find the previous paragraph before the image
+            const $before = doc.resolve(beforeImagePos);
+            const prevNode = $before.nodeBefore;
+
+            if (prevNode && prevNode.type.name === 'paragraph' && prevNode.content.size > 0) {
+              const paragraphEnd = beforeImagePos - 1;
+
+              // Get the vertical coordinate of the end of the previous paragraph
+              const coordsBefore = view.coordsAtPos(paragraphEnd);
+              const yCoord = coordsBefore.bottom - 5; // Slightly above the bottom to ensure we're in the last line
+
+              // Find the position at the same horizontal coordinate in the previous paragraph
+              const targetCoords = view.posAtCoords({ left: xCoord, top: yCoord });
+
+              if (targetCoords) {
+                const sel = TextSelection.near(doc.resolve(targetCoords.pos));
+                if (sel) {
+                  tr.setSelection(sel);
+                  editor.view.dispatch(tr);
+                  return true;
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error in ArrowUp navigation:', error);
+          }
+
+          // Fallback to default behavior
+          const $before = doc.resolve(beforeImagePos);
+          const sel = TextSelection.near($before, -1);
+          if (sel) {
+            tr.setSelection(sel);
+            editor.view.dispatch(tr);
+            return true;
+          }
         }
 
         return false;
