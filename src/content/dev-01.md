@@ -1,8 +1,8 @@
-# Eytzinger Layout for Binary Search
+# Eytzinger Layout
 
-> Credit to Nicholas for showing me this
+> Credit to [@onebignick](https://www.nicholasong.fyi/) for showing me this
 
-[Eytzinger Layout](https://algorithmica.org/en/eytzinger) optimizes the memory access pattern of binary search by storing the sorted data in a Breadth-First Search (BFS) order. This is achieved via a balanced binary tree as shown:
+[Eytzinger Layout](https://algorithmica.org/en/eytzinger) optimises the memory access pattern of binary search by storing the sorted data in a balanced binary tree, instead of a flat array. This allows for access of the next midpoint in a breadth-first search order, rather than jumping bewteen array indexes:
 
 ![alt text](images/eytzinger.png)
 
@@ -10,9 +10,8 @@ Recall that a complete binary tree can be stored in an array where the children 
 
 In the first few iterations, we often hit the same L1 CPU cache line (that was pulled) when the root node was retrieved. In contrast, a standard sorted array binary search makes massive jumps (e.g., from index `N/2` to `N/4`) immediately, causing cache misses at almost every step.
 
-```Caveat
-This is optimal for write-once, read-many workloads. Because the array is packed in a specific permuted order, inserting a new element is expensive (*O(N)*) as it often requires reconstructing the entire array
-```
+There is a caveat to be noted: this is optimal for write-once, read-many workloads. Because the array is packed in a specific permuted order, inserting a new element is expensive (*O(N)*) as it often requires reconstructing the entire array. It is likely more efficient to just use a flat array for write-heavy instances.
+
 
 
 
