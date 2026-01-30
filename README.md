@@ -1,7 +1,7 @@
 <div align="center">
 
-### [zanechee.dev](https://zanechee.dev)
+### software engineer [ ⎇ zanechee.dev](https://zanechee.dev)
 
-projects i'm working on:
+the latest projects i've been working on:
 
 </div>
