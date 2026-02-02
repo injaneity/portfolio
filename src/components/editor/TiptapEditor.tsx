@@ -553,7 +553,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               {/* Download button next to search bar */}
               <button
                 onClick={downloadMarkdown}
-                className="group flex items-center gap-2 text-gray-400 hover:text-[#F6821F] transition-all duration-300 font-sohne-regular text-sm flex-shrink-0"
+                className="group flex items-center gap-2 text-[#7c7c7c] hover:text-[#F6821F] transition-all duration-300 font-sohne-regular text-sm flex-shrink-0"
                 aria-label="Download page as markdown"
               >
                 <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 whitespace-nowrap">download page as markdown</span>
@@ -587,7 +587,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
           {/* View source code - text expands left */}
           <button
             onClick={() => window.open('https://github.com/injaneity/injaneity', '_blank', 'noopener,noreferrer')}
-            className="group flex items-center gap-2 text-gray-400 hover:text-[#F6821F] transition-all duration-300 font-sohne-regular text-sm"
+            className="group flex items-center gap-2 text-[#7c7c7c] hover:text-[#F6821F] transition-all duration-300 font-sohne-regular text-sm"
             aria-label="View source code"
           >
             <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 whitespace-nowrap">view source code</span>
