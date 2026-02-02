@@ -570,10 +570,10 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
           </div>
         </div>
 
-        {/* Bottom right buttons container */}
-        <div className="fixed bottom-8 right-8 flex flex-col items-end gap-4 z-50">
-          {/* Return to top button - original behavior */}
-          {showBackToTop && (
+        {/* Bottom right button container - switches between source code and return to top */}
+        <div className="fixed bottom-8 right-8 z-50">
+          {showBackToTop ? (
+            /* Return to top button - replaces source code when scrolled */
             <button
               onClick={scrollToTop}
               className="flex items-center gap-2 text-[#F6821F] hover:text-[#d96d1a] transition-colors duration-300 font-sohne-regular text-sm"
@@ -582,17 +582,17 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               <span>Return to top</span>
               <ArrowUp className="w-5 h-5" />
             </button>
+          ) : (
+            /* View source code - text expands left */
+            <button
+              onClick={() => window.open('https://github.com/injaneity/injaneity', '_blank', 'noopener,noreferrer')}
+              className="group flex items-center gap-2 text-[#7c7c7c] hover:text-[#F6821F] transition-all duration-300 font-sohne-regular text-sm"
+              aria-label="View source code"
+            >
+              <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 whitespace-nowrap">view source code</span>
+              <Code className="w-5 h-5 flex-shrink-0" />
+            </button>
           )}
-
-          {/* View source code - text expands left */}
-          <button
-            onClick={() => window.open('https://github.com/injaneity/injaneity', '_blank', 'noopener,noreferrer')}
-            className="group flex items-center gap-2 text-[#7c7c7c] hover:text-[#F6821F] transition-all duration-300 font-sohne-regular text-sm"
-            aria-label="View source code"
-          >
-            <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 whitespace-nowrap">view source code</span>
-            <Code className="w-5 h-5 flex-shrink-0" />
-          </button>
         </div>
       </div>
     </ErrorBoundary>
