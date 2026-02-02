@@ -28,30 +28,40 @@ npm preview
 
 The application uses a path-based routing system that maps routes to markdown files:
 
-- **Static Routes**: Direct markdown imports for main pages
-  - `/` → `src/default.md`
-  - `/projects` → `src/projects.md`
-  - `/experience` → `src/experience.md`
+- **Landing Page**: `/` → loads `src/content/landing.md`
+- **Dynamic Routes**: All other routes use slug-based loading via `EditorPage`
+  - `/projects` → loads `src/content/projects.md`
+  - `/experience` → loads `src/content/experience.md`
+  - `/:slug` → loads `src/content/{slug}.md`
 
-- **Dynamic Routes**: Parameter-based markdown loading (see `DynamicMarkdownPage.tsx`)
-  - `/projects/:id` → dynamically loads `src/projects-{id}.md`
-  - `/experience/:id` → dynamically loads `src/experience-{id}.md`
-  - Multiple params are joined with dashes: `/projects/web/1` → `projects-web-1.md`
+All markdown files are stored in the `src/content/` directory and loaded dynamically using Vite's `?raw` import.
 
 ### Component Architecture
 
-**UnifiedMarkdownEditor**: The core content component that:
-- Parses markdown into individual line sections
-- Renders each section with appropriate Typography variants
-- Makes every section click-to-edit with inline textarea editing
-- Supports heading levels (#, ##, ###), blockquotes (>), and inline formatting (*italic*, **bold**)
-- Auto-resizes textareas to match content
-- Keyboard shortcuts: Enter creates new section, Cmd+Enter saves, Escape cancels, Backspace/Delete on empty removes section
+**TiptapEditor**: The core rich text editor component that provides:
+- Full markdown support with WYSIWYG editing via TipTap
+- Syntax highlighting for code blocks using Lowlight
+- Image support with captions and click-to-edit functionality
+- Link rendering with internal/external link detection and navigation
+- Inline formatting (bold, italic, headings, blockquotes, lists, etc.)
+- Custom extensions:
+  - `CodeBlockWithUI`: Code blocks with language selection and copy functionality
+  - `ImageWithCaption`: Images with optional captions and markdown conversion
+  - `LinkIconExtension`: Visual indicators for links with click-to-select
+- Keyboard shortcuts for link/image conversion to markdown for editing
+- Auto-save functionality with debouncing
+- Download page as markdown feature
+- Search bar integration
 
-**DynamicMarkdownPage**: Handles dynamic route-to-markdown mapping
-- Constructs filename from URL params
-- Imports markdown dynamically using Vite's `?raw` import
-- Falls back to error message if file not found
+**EditorPage**: Handles dynamic route-to-markdown mapping
+- Extracts slug from URL params
+- Loads markdown from `src/content/{slug}.md`
+- Falls back to default content if file not found
+- Manages loading and error states
+
+**LandingPage**: Dedicated component for the home page
+- Always loads `src/content/landing.md`
+- Uses same TiptapEditor for consistent editing experience
 
 ### Styling System
 
@@ -70,9 +80,23 @@ Uses Tailwind CSS v4 with a custom typography system:
 ## Content Management
 
 To add new pages:
-1. Create a markdown file in `src/` (e.g., `about.md` or `projects-3.md`)
-2. Add route in `App.tsx`:
-   - Static: `<Route path="/about" element={<UnifiedMarkdownEditor initialContent={aboutMarkdown} />} />`
-   - Dynamic: Already covered by existing wildcard routes
+1. Create a markdown file in `src/content/` directory (e.g., `src/content/about.md`)
+2. The route is automatically handled by existing wildcard routes in `App.tsx`
+   - `/about` will automatically load `src/content/about.md`
+   - No code changes needed unless you want a custom page component
 
-Markdown files are imported as raw strings using Vite's `?raw` suffix.
+Markdown files are imported as raw strings using Vite's `?raw` suffix and edited in-browser using the TiptapEditor.
+
+### TipTap Dependencies
+
+The project uses TipTap v3.18 for rich text editing:
+- Core packages: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/core`
+- Extensions: `@tiptap/extension-link`, `@tiptap/extension-image`, `@tiptap/extension-placeholder`, `@tiptap/extension-typography`, `@tiptap/extension-code-block-lowlight`
+- Markdown support: `@tiptap/markdown` (official package with GitHub Flavored Markdown support)
+- Syntax highlighting: `lowlight` with common language support
+
+**Note**: The project uses the official `@tiptap/markdown` extension which provides:
+- Bidirectional markdown conversion (editor.getMarkdown() to serialize)
+- GitHub Flavored Markdown (GFM) support
+- Integration with the marked library
+- More reliable and actively maintained than the legacy tiptap-markdown package

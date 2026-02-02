@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Typography from '@tiptap/extension-typography';
-import { Markdown } from 'tiptap-markdown';
+import { Markdown } from '@tiptap/markdown';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowUp, Code, ArrowDownToLine } from 'lucide-react';
@@ -64,10 +64,9 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       }),
       Typography,
       Markdown.configure({
-        html: false,
-        transformPastedText: true,
-        transformCopiedText: true,
-        linkify: true,
+        markedOptions: {
+          gfm: true, // GitHub Flavored Markdown
+        },
       }),
       // ImageWithCaption must come AFTER Markdown extension
       // so markdown is parsed first, then our custom rendering applies
@@ -118,6 +117,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       LinkIconExtension,
     ],
     content: initialContent,
+    contentType: 'markdown',
     editable,
     editorProps: {
       attributes: {
@@ -127,7 +127,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       if (onContentChange) {
-        const markdown = ((editor.storage as any).markdown as any).getMarkdown();
+        const markdown = editor.getMarkdown();
 
         // Check if content actually changed
         if (markdown !== lastContentRef.current) {
@@ -159,8 +159,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   // Update editor when content changes externally
   useEffect(() => {
-    if (editor && initialContent !== ((editor.storage as any).markdown as any).getMarkdown()) {
-      editor.commands.setContent(initialContent);
+    if (editor && initialContent !== editor.getMarkdown()) {
+      editor.commands.setContent(initialContent, { contentType: 'markdown' });
       lastContentRef.current = initialContent;
     }
   }, [initialContent, editor]);
@@ -520,7 +520,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const downloadMarkdown = () => {
     if (!editor) return;
 
-    const markdown = ((editor.storage as any).markdown as any).getMarkdown();
+    const markdown = editor.getMarkdown();
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

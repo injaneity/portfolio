@@ -1,10 +1,10 @@
-import { Node } from '@tiptap/core';
+import Image from '@tiptap/extension-image';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { InputRule } from '@tiptap/core';
 import { ImageWithCaptionComponent } from './ImageWithCaptionComponent';
 
-export const ImageWithCaption = Node.create({
+export const ImageWithCaption = Image.extend({
   name: 'image',
 
   group: 'block',
@@ -28,6 +28,7 @@ export const ImageWithCaption = Node.create({
       },
     };
   },
+
 
   parseHTML() {
     return [
