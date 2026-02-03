@@ -68,7 +68,6 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       Color,
       ColoredText,
       Markdown.configure({
-        html: true,
         transformPastedText: true,
         transformCopiedText: true,
       }),
