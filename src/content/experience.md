@@ -1,41 +1,29 @@
 # Experience
 
-## Backend Engineer Intern, SEA
+### <span style="color: #F38020">SEA Group</span>
+> **Backend Engineer Intern:** Jan 2026 - Present
 
-> ### Jan 2026 - May 2026
+Management Information Systems<br>
 
-Management Information Systems
+### Hypotenuse AI (YC20)
+> **Software Engineer Intern:** May 2025 - Nov 2025
 
-.
+Building end-to-end e-commerce workflows for enterprise clients.<br>
 
-## Software Engineer Intern, Hypotenuse AI
+### Singapore-MIT Alliance for Research & Technology
+> **Research Assistant:** Feb 2025 - May 2025
 
-> ### May 2025 - Nov 2025
+Job trajectory modelling in partnership with Mendaki.<br>
 
-Building end-to-end workflows for enterprise clients at a fast-paced YC20 startup.
+### Vinesweeper (Startup)
+> **Co-Founder & Lead Developer**: May 2024 - May 2025
 
-.
+Incubated in SMU Business Innovations Generator (BIG) January 2025 cohort.<br>
 
-## Research Assistant, Singapore-MIT Alliance for Research & Technology
 
-> ### Feb 2025 - May 2025
+### Global Partners Consulting
 
-Job trajectory modelling in partnership with Mendaki
-
-.
-
-## Co-founder & Lead Developer, Stealth Startup
-
-> ### May 2024 - May 2025
-
-Incubated as part of SMU Business Innovations Generator (BIG) January 2025 cohort.
-
-.
-
-## AI Solutions Engineer, Global Partners Consulting
-
-> ### Dec 2023 - May 2024
+> **AI Solutions Engineer**: Dec 2023 - May 2024
 
 Led software development team in creating proprietary, AI-centric solutions for real-world problems.
 
-.

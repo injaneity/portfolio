@@ -20,7 +20,7 @@
 @font-face {
   font-family: 'Sohne Regular';
   src: url('./assets/fonts/Sohne-Regular.woff2') format('woff2'),
-       url('./assets/fonts/Sohne-Regular.otf') format('opentype');
+    url('./assets/fonts/Sohne-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -29,7 +29,7 @@
 @font-face {
   font-family: 'Sohne Medium';
   src: url('./assets/fonts/Sohne-Medium.woff2') format('woff2'),
-       url('./assets/fonts/Sohne-Medium.otf') format('opentype');
+    url('./assets/fonts/Sohne-Medium.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -38,7 +38,7 @@
 @font-face {
   font-family: 'Sohne Bold';
   src: url('./assets/fonts/Sohne-Bold.woff2') format('woff2'),
-       url('./assets/fonts/Sohne-Bold.otf') format('opentype');
+    url('./assets/fonts/Sohne-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -47,7 +47,7 @@
 @font-face {
   font-family: 'Sohne Black';
   src: url('./assets/fonts/Sohne-Black.woff2') format('woff2'),
-       url('./assets/fonts/Sohne-Black.otf') format('opentype');
+    url('./assets/fonts/Sohne-Black.otf') format('opentype');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -128,34 +128,38 @@
 }
 
 .ProseMirror a {
-  color: #F6821F;
-  text-decoration: none;
+  color: #1F1F1F;
+  text-decoration: underline;
+  text-decoration-color: #FFD7B5;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
   position: relative;
-  font-weight: 500;
+  font-weight: 400;
+  isolation: isolate;
 }
 
-/* Link icon as real DOM element */
+/* Slide-up highlight effect */
+.ProseMirror a::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  background-color: #FFD7B5;
+  z-index: -1;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.3s ease;
+}
+
+/* Hide link icon */
 .ProseMirror .link-icon {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  margin-left: 0.25em;
-  vertical-align: middle;
-  transform: translateY(-1px);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23F6821F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 17H7A5 5 0 0 1 7 7h2'/%3E%3Cpath d='M15 7h2a5 5 0 1 1 0 10h-2'/%3E%3Cline x1='8' x2='16' y1='12' y2='12'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  cursor: pointer;
-  user-select: none;
+  display: none;
 }
 
-.ProseMirror a:hover {
-  color: #d96d1a;
-}
-
-.ProseMirror a:hover .link-icon {
-  filter: brightness(0.9);
+.ProseMirror a:hover::before {
+  transform: scaleY(1);
 }
 
 .ProseMirror strong {
@@ -384,7 +388,7 @@
 
 .ProseMirror blockquote {
   border-left: 3px solid #F38020;
-  padding: 1rem 1rem;
+  padding: 0.75rem 1rem;
   margin: 1.5rem 0;
   color: #7c7c7c;
   background-color: #fafafa;
@@ -393,6 +397,12 @@
 .ProseMirror blockquote p {
   color: #7c7c7c;
   margin-bottom: 0;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid #d1d5db;
+  margin: 2rem 0;
 }
 
 .ProseMirror.is-editor-empty:first-child::before {
@@ -483,4 +493,14 @@
   background-color: #fafafa;
   border-left: 3px solid #F38020;
   display: block;
+}
+
+/* Colored Text Styles */
+.ProseMirror span[data-color="#FFD7B5"],
+.ProseMirror span[style*="color: rgb(255, 215, 181)"],
+.ProseMirror span[style*="color: #FFD7B5"],
+.ProseMirror span[data-color="#F38020"],
+.ProseMirror span[style*="color: rgb(243, 128, 32)"],
+.ProseMirror span[style*="color: #F38020"] {
+  color: #F38020 !important;
 }

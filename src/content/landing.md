@@ -1,9 +1,8 @@
+
+
 # Hi! I'm Zane Chee.
 
-## About Me
 
-As a full-time software engineer, I've learned that my true strength lies in designing software, not landscape sketches. From winning hackathons to building impactful systems, I thrive on solving tough problems.
+I'm a [**full-time software engineer**](/experience) with a part-time interest in elegant software. Between hackathon wins, startup adventures and working in major companies, I've developed a lifelong passion in solving tough problems collaboratively.
 
-> In the spirit of art, my portfolio is fully editable with markdown. Try it!
-
-[Experience](/experience)
+[**Experience**](/experience)  ·  [**Projects**](/projects)  ·  [**<span style="color: #F38020">Contact me</span>**](/contact)

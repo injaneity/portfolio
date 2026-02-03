@@ -4,6 +4,8 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Typography from '@tiptap/extension-typography';
 import { Markdown } from '@tiptap/markdown';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowUp, Code, ArrowDownToLine } from 'lucide-react';
@@ -14,6 +16,7 @@ import { createLowlight, common } from 'lowlight';
 import { CodeBlockWithUI } from './extensions/CodeBlockWithUI';
 import { LinkIconExtension } from './extensions/LinkIconExtension';
 import { ImageWithCaption } from './extensions/ImageWithCaption';
+import { ColoredText } from './extensions/ColoredText';
 import { TextSelection } from '@tiptap/pm/state';
 
 interface TiptapEditorProps {
@@ -40,6 +43,18 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   // Create lowlight instance with common languages
   const lowlight = createLowlight(common);
 
+  // Helper to count leading newlines in markdown
+  const countLeadingNewlines = (markdown: string): number => {
+    const match = markdown.match(/^(\n+)/);
+    return match ? match[1].length : 0;
+  };
+
+  // Helper to process content with leading newlines
+  const processMarkdownWithLeadingNewlines = (markdown: string) => {
+    const leadingNewlines = countLeadingNewlines(markdown);
+    return { markdown, leadingNewlines };
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -61,6 +76,9 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         emptyEditorClass: 'is-editor-empty',
       }),
       Typography,
+      TextStyle,
+      Color,
+      ColoredText,
       Markdown,
       // ImageWithCaption must come AFTER Markdown extension
       ImageWithCaption,
@@ -118,6 +136,19 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         spellcheck: 'false',
       },
     },
+    onCreate: ({ editor }) => {
+      // Handle leading newlines in initial content
+      const leadingNewlines = countLeadingNewlines(initialContent);
+      if (leadingNewlines > 0) {
+        editor.commands.command(({ tr, state }) => {
+          const emptyParagraphs = Array(leadingNewlines).fill(null).map(() =>
+            state.schema.nodes.paragraph.create()
+          );
+          tr.insert(0, emptyParagraphs);
+          return true;
+        });
+      }
+    },
     onUpdate: ({ editor }) => {
       if (onContentChange) {
         const markdown = editor.getMarkdown();
@@ -153,7 +184,22 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   // Update editor when content changes externally
   useEffect(() => {
     if (editor && initialContent !== editor.getMarkdown()) {
-      editor.commands.setContent(initialContent, { contentType: 'markdown' });
+      const { markdown, leadingNewlines } = processMarkdownWithLeadingNewlines(initialContent);
+
+      // Set the content (this will strip leading newlines)
+      editor.commands.setContent(markdown, { contentType: 'markdown' });
+
+      // Add empty paragraphs at the beginning to preserve leading newlines
+      if (leadingNewlines > 0) {
+        editor.commands.command(({ tr, state }) => {
+          const emptyParagraphs = Array(leadingNewlines).fill(null).map(() =>
+            state.schema.nodes.paragraph.create()
+          );
+          tr.insert(0, emptyParagraphs);
+          return true;
+        });
+      }
+
       lastContentRef.current = initialContent;
     }
   }, [initialContent, editor]);
@@ -178,252 +224,252 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       // Ensure the view is fully mounted with a DOM element
       const viewDom = (editor.view as any).dom;
       if (!viewDom || !(viewDom instanceof HTMLElement)) return;
-      
+
       const dom = viewDom as HTMLElement;
 
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
+      const handleClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
 
-      // Handle image clicks - convert to markdown for editing
-      // Only trigger on actual img element, not figure wrapper
-      const imgElement = target.closest('img[data-image-markdown]') as HTMLImageElement | null;
+        // Handle image clicks - convert to markdown for editing
+        // Only trigger on actual img element, not figure wrapper
+        const imgElement = target.closest('img[data-image-markdown]') as HTMLImageElement | null;
 
-      if (imgElement && editable) {
-        // Prevent rapid-fire conversions
-        if (imageConversionInProgress.current) {
+        if (imgElement && editable) {
+          // Prevent rapid-fire conversions
+          if (imageConversionInProgress.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+
+          imageConversionInProgress.current = true;
           e.preventDefault();
           e.stopPropagation();
+
+          try {
+            // Find the image node in the editor
+            const pos = editor.view.posAtDOM(imgElement, 0);
+            const resolvedPos = editor.state.doc.resolve(pos);
+
+            // Find the actual image node
+            let imageNode = null;
+            let imagePos = -1;
+
+            // Check if we're directly at an image node
+            if (resolvedPos.parent.type.name === 'image') {
+              imageNode = resolvedPos.parent;
+              imagePos = resolvedPos.before();
+            } else {
+              // Search around the position for an image node
+              const { doc } = editor.state;
+              doc.nodesBetween(Math.max(0, pos - 5), Math.min(doc.content.size, pos + 5), (node, nodePos) => {
+                if (node.type.name === 'image') {
+                  imageNode = node;
+                  imagePos = nodePos;
+                  return false; // Stop searching
+                }
+              });
+            }
+
+            if (imageNode && imagePos >= 0) {
+              const { src, alt, title } = imageNode.attrs;
+              const altText = alt || '';
+              const titleText = title ? ` "${title}"` : '';
+              const markdown = `![${altText}](${src}${titleText})`;
+
+              // Use transaction to replace block image with paragraph containing markdown text
+              const { tr, schema } = editor.state;
+              const paragraphNode = schema.nodes.paragraph.create(null, schema.text(markdown));
+              tr.replaceWith(imagePos, imagePos + imageNode.nodeSize, paragraphNode);
+              editor.view.dispatch(tr);
+
+              // Position cursor after the markdown text
+              setTimeout(() => {
+                editor.commands.setTextSelection(imagePos + markdown.length);
+                editor.commands.focus();
+                // Reset flag after a short delay to prevent loops
+                setTimeout(() => {
+                  imageConversionInProgress.current = false;
+                }, 100);
+              }, 10);
+            } else {
+              imageConversionInProgress.current = false;
+            }
+          } catch (error) {
+            console.error('Error converting image to markdown:', error);
+            imageConversionInProgress.current = false;
+          }
           return;
         }
 
-        imageConversionInProgress.current = true;
-        e.preventDefault();
-        e.stopPropagation();
+        // Handle link icon clicks
+        if (target.classList.contains('link-icon')) {
+          e.preventDefault();
+          e.stopPropagation();
 
-        try {
-          // Find the image node in the editor
-          const pos = editor.view.posAtDOM(imgElement, 0);
-          const resolvedPos = editor.state.doc.resolve(pos);
+          const anchor = target.previousElementSibling as HTMLAnchorElement;
+          if (!anchor || anchor.tagName !== 'A') return;
 
-          // Find the actual image node
-          let imageNode = null;
-          let imagePos = -1;
+          // Find the link in the editor and select it
+          try {
+            const pos = editor.view.posAtDOM(anchor, 0);
+            const linkText = anchor.textContent || '';
 
-          // Check if we're directly at an image node
-          if (resolvedPos.parent.type.name === 'image') {
-            imageNode = resolvedPos.parent;
-            imagePos = resolvedPos.before();
-          } else {
-            // Search around the position for an image node
-            const { doc } = editor.state;
-            doc.nodesBetween(Math.max(0, pos - 5), Math.min(doc.content.size, pos + 5), (node, nodePos) => {
-              if (node.type.name === 'image') {
-                imageNode = node;
-                imagePos = nodePos;
-                return false; // Stop searching
-              }
-            });
+            editor.chain()
+              .focus()
+              .setTextSelection({ from: pos, to: pos + linkText.length })
+              .run();
+          } catch (error) {
+            console.error('Error selecting link:', error);
           }
-
-          if (imageNode && imagePos >= 0) {
-            const { src, alt, title } = imageNode.attrs;
-            const altText = alt || '';
-            const titleText = title ? ` "${title}"` : '';
-            const markdown = `![${altText}](${src}${titleText})`;
-
-            // Use transaction to replace block image with paragraph containing markdown text
-            const { tr, schema } = editor.state;
-            const paragraphNode = schema.nodes.paragraph.create(null, schema.text(markdown));
-            tr.replaceWith(imagePos, imagePos + imageNode.nodeSize, paragraphNode);
-            editor.view.dispatch(tr);
-
-            // Position cursor after the markdown text
-            setTimeout(() => {
-              editor.commands.setTextSelection(imagePos + markdown.length);
-              editor.commands.focus();
-              // Reset flag after a short delay to prevent loops
-              setTimeout(() => {
-                imageConversionInProgress.current = false;
-              }, 100);
-            }, 10);
-          } else {
-            imageConversionInProgress.current = false;
-          }
-        } catch (error) {
-          console.error('Error converting image to markdown:', error);
-          imageConversionInProgress.current = false;
+          return;
         }
-        return;
-      }
 
-      // Handle link icon clicks
-      if (target.classList.contains('link-icon')) {
-        e.preventDefault();
-        e.stopPropagation();
+        const anchor = target.closest('a') as HTMLAnchorElement | null;
+        if (!anchor) return;
 
-        const anchor = target.previousElementSibling as HTMLAnchorElement;
-        if (!anchor || anchor.tagName !== 'A') return;
+        let href = anchor.getAttribute('href');
+        if (!href) return;
 
-        // Find the link in the editor and select it
-        try {
-          const pos = editor.view.posAtDOM(anchor, 0);
-          const linkText = anchor.textContent || '';
+        // Check if link is external (has protocol or looks like a domain)
+        const hasProtocol = /^https?:\/\//i.test(href);
+        const isSpecial = href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:');
+        const looksLikeDomain = /^[a-z0-9.-]+\.[a-z]{2,}/i.test(href);
+        const isExternal = hasProtocol || looksLikeDomain;
 
-          editor.chain()
-            .focus()
-            .setTextSelection({ from: pos, to: pos + linkText.length })
-            .run();
-        } catch (error) {
-          console.error('Error selecting link:', error);
+        // For internal links (starts with / or ./ or ../), navigate via React Router
+        if (!isExternal && !isSpecial) {
+          e.preventDefault();
+          e.stopPropagation();
+          // Normalize relative paths for React Router
+          const normalizedHref = href.startsWith('./') ? href.slice(1) : href;
+          navigate(normalizedHref);
+          return;
         }
-        return;
-      }
 
-      const anchor = target.closest('a') as HTMLAnchorElement | null;
-      if (!anchor) return;
+        // For external links without protocol, add https:// and open in new tab
+        if (isExternal && !isSpecial) {
+          e.preventDefault();
+          e.stopPropagation();
+          const fullUrl = hasProtocol ? href : `https://${href}`;
+          window.open(fullUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
 
-      let href = anchor.getAttribute('href');
-      if (!href) return;
+        // Special links (mailto, tel, hash) work normally
+      };
 
-      // Check if link is external (has protocol or looks like a domain)
-      const hasProtocol = /^https?:\/\//i.test(href);
-      const isSpecial = href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:');
-      const looksLikeDomain = /^[a-z0-9.-]+\.[a-z]{2,}/i.test(href);
-      const isExternal = hasProtocol || looksLikeDomain;
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Backspace') {
+          const { state } = editor;
+          const { selection } = state;
+          const pos = selection.from;
 
-      // For internal links (starts with / or ./ or ../), navigate via React Router
-      if (!isExternal && !isSpecial) {
-        e.preventDefault();
-        e.stopPropagation();
-        // Normalize relative paths for React Router
-        const normalizedHref = href.startsWith('./') ? href.slice(1) : href;
-        navigate(normalizedHref);
-        return;
-      }
+          // Only handle when nothing is selected
+          if (!selection.empty) return;
+          if (pos <= 0) return;
 
-      // For external links without protocol, add https:// and open in new tab
-      if (isExternal && !isSpecial) {
-        e.preventDefault();
-        e.stopPropagation();
-        const fullUrl = hasProtocol ? href : `https://${href}`;
-        window.open(fullUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
+          try {
+            const $current = state.doc.resolve(pos);
+            const currentMarks = $current.marks();
 
-      // Special links (mailto, tel, hash) work normally
-    };
+            // CASE 1: Check if position right before cursor (pos-1) has a link mark
+            if (pos > 0) {
+              const $prev = state.doc.resolve(pos - 1);
+              const prevMarks = $prev.marks();
+              let linkMark = prevMarks.find(m => m.type.name === 'link');
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Backspace') {
-        const { state } = editor;
-        const { selection } = state;
-        const pos = selection.from;
-
-        // Only handle when nothing is selected
-        if (!selection.empty) return;
-        if (pos <= 0) return;
-
-        try {
-          const $current = state.doc.resolve(pos);
-          const currentMarks = $current.marks();
-
-          // CASE 1: Check if position right before cursor (pos-1) has a link mark
-          if (pos > 0) {
-            const $prev = state.doc.resolve(pos - 1);
-            const prevMarks = $prev.marks();
-            let linkMark = prevMarks.find(m => m.type.name === 'link');
-
-            // CASE 2: If pos-1 has no link mark, check if it's a space after a link
-            if (!linkMark && pos > 1) {
-              const charAtPrevPos = state.doc.textBetween(pos - 1, pos);
-              if (charAtPrevPos === ' ') {
-                const $twoBack = state.doc.resolve(pos - 2);
-                const twoBackMarks = $twoBack.marks();
-                linkMark = twoBackMarks.find(m => m.type.name === 'link');
+              // CASE 2: If pos-1 has no link mark, check if it's a space after a link
+              if (!linkMark && pos > 1) {
+                const charAtPrevPos = state.doc.textBetween(pos - 1, pos);
+                if (charAtPrevPos === ' ') {
+                  const $twoBack = state.doc.resolve(pos - 2);
+                  const twoBackMarks = $twoBack.marks();
+                  linkMark = twoBackMarks.find(m => m.type.name === 'link');
+                }
               }
-            }
 
-            if (linkMark) {
-              const currentHasLink = currentMarks.some(m =>
-                m.type.name === 'link' && m.attrs.href === linkMark.attrs.href
-              );
+              if (linkMark) {
+                const currentHasLink = currentMarks.some(m =>
+                  m.type.name === 'link' && m.attrs.href === linkMark.attrs.href
+                );
 
-              if (!currentHasLink) {
-                // Find the start of the link
-                let linkStart = pos - 1;
-                for (let i = pos - 2; i >= 0; i--) {
-                  const $pos = state.doc.resolve(i);
-                  const marks = $pos.marks();
-                  const hasSameLinkMark = marks.some(m =>
-                    m.type.name === 'link' && m.attrs.href === linkMark.attrs.href
-                  );
-                  if (!hasSameLinkMark) {
-                    linkStart = i + 1;
-                    break;
+                if (!currentHasLink) {
+                  // Find the start of the link
+                  let linkStart = pos - 1;
+                  for (let i = pos - 2; i >= 0; i--) {
+                    const $pos = state.doc.resolve(i);
+                    const marks = $pos.marks();
+                    const hasSameLinkMark = marks.some(m =>
+                      m.type.name === 'link' && m.attrs.href === linkMark.attrs.href
+                    );
+                    if (!hasSameLinkMark) {
+                      linkStart = i + 1;
+                      break;
+                    }
+                    if (i === 0) {
+                      linkStart = 0;
+                    }
                   }
-                  if (i === 0) {
-                    linkStart = 0;
+
+                  // Find the actual end of the link (excluding trailing space if any)
+                  let linkEnd = linkStart;
+                  for (let i = linkStart; i < pos; i++) {
+                    const $pos = state.doc.resolve(i);
+                    const marks = $pos.marks();
+                    const hasSameLinkMark = marks.some(m =>
+                      m.type.name === 'link' && m.attrs.href === linkMark.attrs.href
+                    );
+                    if (hasSameLinkMark) {
+                      linkEnd = i + 1;
+                    }
                   }
+
+                  // Check if there's a space after the link that should also be deleted
+                  let deleteEnd = pos;
+                  const charAtPos = state.doc.textBetween(pos - 1, pos);
+                  if (charAtPos === ' ') {
+                    deleteEnd = pos;
+                  } else if (pos < state.doc.content.size) {
+                    const charAfter = state.doc.textBetween(pos, pos + 1);
+                    if (charAfter === ' ') {
+                      deleteEnd = pos + 1;
+                    }
+                  }
+
+                  const linkText = state.doc.textBetween(linkStart, linkEnd).trim();
+                  const linkHref = linkMark.attrs.href;
+                  const markdownText = `[${linkText}](${linkHref})`;
+
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  // Use transaction directly to insert plain text without processing
+                  const { tr } = editor.state;
+                  tr.delete(linkStart, deleteEnd);
+                  tr.insertText(markdownText, linkStart);
+
+                  editor.view.dispatch(tr);
+                  editor.commands.focus();
+
+                  return;
                 }
-
-                // Find the actual end of the link (excluding trailing space if any)
-                let linkEnd = linkStart;
-                for (let i = linkStart; i < pos; i++) {
-                  const $pos = state.doc.resolve(i);
-                  const marks = $pos.marks();
-                  const hasSameLinkMark = marks.some(m =>
-                    m.type.name === 'link' && m.attrs.href === linkMark.attrs.href
-                  );
-                  if (hasSameLinkMark) {
-                    linkEnd = i + 1;
-                  }
-                }
-
-                // Check if there's a space after the link that should also be deleted
-                let deleteEnd = pos;
-                const charAtPos = state.doc.textBetween(pos - 1, pos);
-                if (charAtPos === ' ') {
-                  deleteEnd = pos;
-                } else if (pos < state.doc.content.size) {
-                  const charAfter = state.doc.textBetween(pos, pos + 1);
-                  if (charAfter === ' ') {
-                    deleteEnd = pos + 1;
-                  }
-                }
-
-                const linkText = state.doc.textBetween(linkStart, linkEnd).trim();
-                const linkHref = linkMark.attrs.href;
-                const markdownText = `[${linkText}](${linkHref})`;
-
-                e.preventDefault();
-                e.stopPropagation();
-
-                // Use transaction directly to insert plain text without processing
-                const { tr } = editor.state;
-                tr.delete(linkStart, deleteEnd);
-                tr.insertText(markdownText, linkStart);
-
-                editor.view.dispatch(tr);
-                editor.commands.focus();
-
-                return;
               }
             }
+          } catch (err) {
+            console.error('Error in backspace handler:', err);
           }
-        } catch (err) {
-          console.error('Error in backspace handler:', err);
         }
-      }
-    };
+      };
 
-    dom.addEventListener('click', handleClick);
-    dom.addEventListener('keydown', handleKeyDown);
-    return () => {
-      dom.removeEventListener('click', handleClick);
-      dom.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(timeoutId);
-    };
+      dom.addEventListener('click', handleClick);
+      dom.addEventListener('keydown', handleKeyDown);
+      return () => {
+        dom.removeEventListener('click', handleClick);
+        dom.removeEventListener('keydown', handleKeyDown);
+        clearTimeout(timeoutId);
+      };
     }, 0);
 
     return () => clearTimeout(timeoutId);
