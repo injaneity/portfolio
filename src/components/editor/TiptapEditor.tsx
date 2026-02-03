@@ -43,18 +43,6 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   // Create lowlight instance with common languages
   const lowlight = createLowlight(common);
 
-  // Helper to count leading newlines in markdown
-  const countLeadingNewlines = (markdown: string): number => {
-    const match = markdown.match(/^(\n+)/);
-    return match ? match[1].length : 0;
-  };
-
-  // Helper to process content with leading newlines
-  const processMarkdownWithLeadingNewlines = (markdown: string) => {
-    const leadingNewlines = countLeadingNewlines(markdown);
-    return { markdown, leadingNewlines };
-  };
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -79,7 +67,11 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       TextStyle,
       Color,
       ColoredText,
-      Markdown,
+      Markdown.configure({
+        html: true,
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
       // ImageWithCaption must come AFTER Markdown extension
       ImageWithCaption,
       // Link extension must be last to avoid duplicate registration warning
@@ -136,19 +128,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         spellcheck: 'false',
       },
     },
-    onCreate: ({ editor }) => {
-      // Handle leading newlines in initial content
-      const leadingNewlines = countLeadingNewlines(initialContent);
-      if (leadingNewlines > 0) {
-        editor.commands.command(({ tr, state }) => {
-          const emptyParagraphs = Array(leadingNewlines).fill(null).map(() =>
-            state.schema.nodes.paragraph.create()
-          );
-          tr.insert(0, emptyParagraphs);
-          return true;
-        });
-      }
-    },
+
     onUpdate: ({ editor }) => {
       if (onContentChange) {
         const markdown = editor.getMarkdown();
@@ -184,22 +164,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   // Update editor when content changes externally
   useEffect(() => {
     if (editor && initialContent !== editor.getMarkdown()) {
-      const { markdown, leadingNewlines } = processMarkdownWithLeadingNewlines(initialContent);
-
-      // Set the content (this will strip leading newlines)
-      editor.commands.setContent(markdown, { contentType: 'markdown' });
-
-      // Add empty paragraphs at the beginning to preserve leading newlines
-      if (leadingNewlines > 0) {
-        editor.commands.command(({ tr, state }) => {
-          const emptyParagraphs = Array(leadingNewlines).fill(null).map(() =>
-            state.schema.nodes.paragraph.create()
-          );
-          tr.insert(0, emptyParagraphs);
-          return true;
-        });
-      }
-
+      editor.commands.setContent(initialContent, { contentType: 'markdown' });
       lastContentRef.current = initialContent;
     }
   }, [initialContent, editor]);
@@ -603,8 +568,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         </div>
 
         {/* Editor content - Scrollable area */}
-        <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-8">
-          <div className="w-full max-w-[680px] mx-auto">
+        <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-8 flex items-center">
+          <div className="w-full max-w-[680px] mx-auto py-8">
             <EditorContent editor={editor} />
           </div>
         </div>

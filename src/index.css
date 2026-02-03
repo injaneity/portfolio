@@ -125,6 +125,12 @@
   line-height: 1.7;
   margin-bottom: 1.5rem;
   color: #1F1F1F;
+  min-height: 1em;
+}
+
+/* Preserve empty paragraphs for spacing */
+.ProseMirror p:empty {
+  min-height: 1.7em;
 }
 
 .ProseMirror a {
