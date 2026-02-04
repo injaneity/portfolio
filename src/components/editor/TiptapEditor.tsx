@@ -12,7 +12,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowUp, Code, ArrowDownToLine } from 'lucide-react';
 import { SearchBar } from '../layout/SearchBar';
-import { InputRule } from '@tiptap/core';
+import { InputRule, mergeAttributes } from '@tiptap/core';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { createLowlight, common } from 'lowlight';
 import { CodeBlockWithUI } from './extensions/CodeBlockWithUI';
@@ -76,11 +77,156 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       TextStyle,
       Color,
       ColoredText,
-      Markdown,
+      Markdown.extend({
+        addProseMirrorPlugins() {
+          return [
+            ...(this.parent?.() || []),
+            new Plugin({
+              key: new PluginKey('markdownDownloadLinkParser'),
+              appendTransaction: (transactions, _oldState, newState) => {
+                // Only run when content changes
+                const docChanged = transactions.some(tr => tr.docChanged);
+                if (!docChanged) return null;
+
+                // Check if this was triggered by setContent (initial markdown load)
+                const isSetContent = transactions.some(tr => tr.getMeta('addToHistory') === false);
+                if (!isSetContent) return null;
+
+                const { doc, schema } = newState;
+                let tr = newState.tr;
+                let modified = false;
+
+                doc.descendants((node, pos) => {
+                  if (node.isText && node.marks.length > 0) {
+                    node.marks.forEach((mark) => {
+                      if (mark.type.name === 'link' && mark.attrs.href?.startsWith('!')) {
+                        const href = mark.attrs.href.substring(1);
+                        const from = pos;
+                        const to = pos + node.nodeSize;
+
+                        tr.removeMark(from, to, mark);
+                        tr.addMark(from, to, schema.marks.link.create({ href, isDownload: true }));
+                        modified = true;
+                      }
+                    });
+                  }
+                });
+
+                return modified ? tr : null;
+              },
+            }),
+          ];
+        },
+      }).configure({}),
       // ImageWithCaption must come AFTER Markdown extension
       ImageWithCaption,
-      // Link extension must be last to avoid duplicate registration warning
+      // Link extension - handles both regular and download links
       Link.extend({
+        addStorage() {
+          return {
+            ...this.parent?.(),
+            markdown: {
+              serialize: {
+                open(_state: any, _mark: any) {
+                  return '[';
+                },
+                close(_state: any, mark: any) {
+                  const href = mark.attrs.href;
+                  const isDownload = mark.attrs.isDownload;
+                  return isDownload ? `](!${href})` : `](${href})`;
+                },
+              },
+              parse: {
+                // Override how the markdown extension parses links
+                link: {
+                  mark: 'link',
+                  getAttrs: (tok: any) => {
+                    const href = tok.attrGet('href');
+                    if (href && href.startsWith('!')) {
+                      return {
+                        href: href.substring(1),
+                        isDownload: true,
+                      };
+                    }
+                    return {
+                      href,
+                      isDownload: false,
+                    };
+                  },
+                },
+              },
+            },
+          };
+        },
+        addAttributes() {
+          const parentAttrs: any = this.parent?.() || {};
+          // Exclude the class attribute from parent since we handle it in renderHTML
+          const { class: _, ...attrsWithoutClass } = parentAttrs;
+
+          return {
+            ...attrsWithoutClass,
+            isDownload: {
+              default: false,
+              rendered: false, // Don't render as HTML attribute, keep it internal only
+              parseHTML: (element) => {
+                const href = element.getAttribute('href') || '';
+                return href.startsWith('!');
+              },
+            },
+          };
+        },
+        parseHTML() {
+          return [
+            {
+              tag: 'a[href]',
+              getAttrs: (node) => {
+                const href = (node as HTMLElement).getAttribute('href');
+                if (!href) return false;
+
+                // Check if it's a download link
+                if (href.startsWith('!')) {
+                  return {
+                    href: href.substring(1), // Remove the ! prefix
+                    isDownload: true,
+                  };
+                }
+
+                return { href, isDownload: false };
+              },
+            },
+          ];
+        },
+        renderHTML({ mark, HTMLAttributes }) {
+          const isDownload = mark.attrs.isDownload;
+
+          // Different styling for download links
+          const className = isDownload
+            ? 'cursor-pointer transition-colors font-semibold'
+            : 'text-blue-600 hover:text-blue-800 cursor-pointer transition-colors underline';
+
+          // For download links: remove target and rel (they prevent downloads)
+          const downloadAttrs = isDownload ? {
+            download: '',
+            target: null,  // Explicitly remove target
+            rel: null,     // Explicitly remove rel
+          } : {};
+
+          // Use inline style for orange color to ensure it's applied (CSS specificity)
+          const styleAttr = isDownload ? { style: 'color: #F38020;' } : {};
+
+          // Filter out class attribute
+          const { class: _, ...attrsWithoutClass } = HTMLAttributes;
+
+          return [
+            'a',
+            mergeAttributes(attrsWithoutClass, {
+              class: className,
+              ...downloadAttrs,
+              ...styleAttr,
+            }),
+            0,
+          ];
+        },
         addInputRules() {
           return [
             new InputRule({
@@ -92,7 +238,13 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
                   const start = range.from;
                   const end = range.to;
                   const linkText = match[1];
-                  const linkUrl = match[2];
+                  let linkUrl = match[2];
+
+                  // Check if it's a download link
+                  const isDownload = linkUrl.startsWith('!');
+                  if (isDownload) {
+                    linkUrl = linkUrl.substring(1); // Remove the ! prefix
+                  }
 
                   if (linkText && linkUrl) {
                     const linkEndPos = start + linkText.length;
@@ -102,7 +254,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
                       .addMark(
                         start,
                         linkEndPos,
-                        state.schema.marks.link.create({ href: linkUrl })
+                        state.schema.marks.link.create({ href: linkUrl, isDownload })
                       );
 
                     // Position cursor after the link and space
@@ -115,11 +267,73 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             }),
           ];
         },
+        addProseMirrorPlugins() {
+          return [
+            new Plugin({
+              key: new PluginKey('downloadLinkTransform'),
+              appendTransaction: (transactions, _oldState, newState) => {
+                // Only run if doc changed
+                const docChanged = transactions.some(tr => tr.docChanged);
+                if (!docChanged) return null;
+
+                const { doc, schema } = newState;
+                let tr = newState.tr;
+                let modified = false;
+
+                doc.descendants((node, pos) => {
+                  if (node.isText && node.marks.length > 0) {
+                    node.marks.forEach((mark) => {
+                      if (mark.type.name === 'link' && mark.attrs.href?.startsWith('!') && !mark.attrs.isDownload) {
+                        // Found a link with ! prefix that hasn't been transformed yet
+                        const href = mark.attrs.href.substring(1);
+                        const from = pos;
+                        const to = pos + node.nodeSize;
+
+                        // Remove old mark and add new one with isDownload
+                        tr.removeMark(from, to, mark);
+                        tr.addMark(from, to, schema.marks.link.create({ href, isDownload: true }));
+                        modified = true;
+                      }
+                    });
+                  }
+                });
+
+                return modified ? tr : null;
+              },
+            }),
+          ];
+        },
+        onCreate() {
+          // Transform download links on initial load
+          setTimeout(() => {
+            const { doc, schema } = this.editor.state;
+            let tr = this.editor.state.tr;
+            let modified = false;
+
+            doc.descendants((node, pos) => {
+              if (node.isText && node.marks.length > 0) {
+                node.marks.forEach((mark) => {
+                  if (mark.type.name === 'link' && mark.attrs.href?.startsWith('!') && !mark.attrs.isDownload) {
+                    const href = mark.attrs.href.substring(1);
+                    const from = pos;
+                    const to = pos + node.nodeSize;
+
+                    tr.removeMark(from, to, mark);
+                    tr.addMark(from, to, schema.marks.link.create({ href, isDownload: true }));
+                    modified = true;
+                  }
+                });
+              }
+            });
+
+            if (modified) {
+              this.editor.view.dispatch(tr);
+            }
+          }, 0);
+        },
       }).configure({
         openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-[#F6821F] cursor-pointer transition-colors',
-        },
+        HTMLAttributes: {},
       }),
       // Add link icon extension
       LinkIconExtension,
@@ -302,6 +516,25 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         let href = anchor.getAttribute('href');
         if (!href) return;
 
+        // Check if link has download attribute or is a downloadable file
+        const hasDownloadAttr = anchor.hasAttribute('download');
+        const isDownloadableFile = /\.(pdf|zip|doc|docx|xls|xlsx|ppt|pptx|txt|csv)$/i.test(href);
+
+        // Manually trigger download for download links
+        if (hasDownloadAttr || isDownloadableFile) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Create a temporary anchor element to trigger download
+          const downloadLink = document.createElement('a');
+          downloadLink.href = href;
+          downloadLink.download = anchor.getAttribute('download') || href.split('/').pop() || 'download';
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          return;
+        }
+
         // Check if link is external (has protocol or looks like a domain)
         const hasProtocol = /^https?:\/\//i.test(href);
         const isSpecial = href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:');
@@ -410,7 +643,11 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
                   const linkText = state.doc.textBetween(linkStart, linkEnd).trim();
                   const linkHref = linkMark.attrs.href;
-                  const markdownText = `[${linkText}](${linkHref})`;
+                  const isDownload = linkMark.attrs.isDownload;
+                  // Use different markdown format for download links
+                  const markdownText = isDownload
+                    ? `[${linkText}](!${linkHref})`
+                    : `[${linkText}](${linkHref})`;
 
                   e.preventDefault();
                   e.stopPropagation();
@@ -467,6 +704,13 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         const anchors = Array.from(dom.querySelectorAll('a')) as HTMLAnchorElement[];
 
         anchors.forEach((anchor) => {
+          // Skip download links - they shouldn't have target="_blank"
+          if (anchor.hasAttribute('download')) {
+            anchor.removeAttribute('target');
+            anchor.removeAttribute('rel');
+            return;
+          }
+
           const href = anchor.getAttribute('href') || '';
           const hasProtocol = /^https?:\/\//i.test(href);
           const looksLikeDomain = /^[a-z0-9.-]+\.[a-z]{2,}/i.test(href);

@@ -13,7 +13,7 @@ export const LandingPage: React.FC = () => {
     setLoading(true);
     try {
       // Always load fresh from markdown file
-      const module = await import('../../content/landing.md?raw');
+      const module = await import('../../content/00-landing.md?raw');
       setContent(module.default);
     } catch (error: any) {
       console.error('Error loading content:', error);
